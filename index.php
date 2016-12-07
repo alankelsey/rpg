@@ -1,3 +1,12 @@
+<div id="menu">
+    <ul>
+	   <li><a href="index.php?p=home">Home</a> </li>
+	   <li>	<a href="index.php?p=aboutus">about us</a>  </li>
+	   <li>	<a href="index.php?p=contactus">Contact us</a>  </li>
+	   <li>	<a href="index.php?p=news">News</a>
+    </ul>
+  </div>
+
 <?php
 //session_start();
 // store session data
@@ -9,19 +18,9 @@ include_once ('header.php');
 <div id="container">
 
 
-	<div id="menu">
-		<a href="index.php?p=home">Home</a>
-		<a href="index.php?p=aboutus">about us</a>
-		<a href="index.php?p=contactus">Contact us</a>
-		<a href="index.php?p=news">News</a>
 
-
-	</div>
-	<a href="index.php">index.php</a>
-	<div>
 	
-	
-	</div>
+  
 	<div id="content">
     <body>
 		<?php
@@ -38,6 +37,7 @@ include_once ('header.php');
 	</div>
 
 </div>
+
 
 </div>
 
