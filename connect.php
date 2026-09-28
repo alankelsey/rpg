@@ -2,11 +2,11 @@
 
 
 //Variables for connecting to your database.
-//$hostname = "firstplace.db.6752384.hostedresource.com";
-	$hostname = "C0d3x.db.6752384.hostedresource.com";
-	$username = "C0d3x";
-	$dbname = "C0d3x";
-	$password = "L0ngpass!";
+// Note: Credentials removed for security. See .env.example for format.
+	$hostname = getenv('DB_HOSTNAME') ?: '';
+	$username = getenv('DB_USERNAME') ?: '';
+	$dbname = getenv('DB_NAME') ?: '';
+	$password = getenv('DB_PASSWORD') ?: '';
 
 // Create connection	
 $con = mysqli_connect($hostname, $username, $password, $dbname);

@@ -5,16 +5,15 @@ function connectdb($sqlst)
 {
 
 ##############################
-#this starts the connection    
+#this starts the connection
 ##############################
 //Variables for connecting to your database.
-//These variable values come from your hosting account.
-$hostname = "firstplace.db.6752384.hostedresource.com";
- $username = "firstplace";
- $dbname = "firstplace";
+// Note: Credentials removed for security. See .env.example for format.
+$hostname = getenv('DB_HOSTNAME') ?: '';
+ $username = getenv('DB_USERNAME') ?: '';
+ $dbname = getenv('DB_NAME') ?: '';
 
-//These variable values need to be changed by you before deploying
- $password = "Iwakeup@9";
+ $password = getenv('DB_PASSWORD') ?: '';
 //$usertable = "Users";
  //$yourfield = "username"; 
 

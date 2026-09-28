@@ -33,12 +33,13 @@ include ('db.php');
 
 	function getName($userid)
 	{
-		
+
 	 //global $hostname;
-	$hostname = "C0d3x.db.6752384.hostedresource.com";
-	$username = "C0d3x";
-	$dbname = "C0d3x";
-	$password = "L0ngpass!";
+	// Note: Credentials removed for security. See .env.example for format.
+	$hostname = getenv('DB_HOSTNAME') ?: '';
+	$username = getenv('DB_USERNAME') ?: '';
+	$dbname = getenv('DB_NAME') ?: '';
+	$password = getenv('DB_PASSWORD') ?: '';
 	// global $username;
 	// global $dbname;
 	// global $password;
