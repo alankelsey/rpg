@@ -84,6 +84,7 @@ const beats=['Opening','Buildup','Turning point','Climax','Ending'];
 const threads=['Estranged relative','Unknown parent','Unresolved hardship','A secret from the past','Someone left behind'];
 const defaults={archetype:'Rags to riches',birth:'Dense city',raised:'Inner city',career:'Manual trade',school:'Public',parent1:'Alive, close',parent2:'Unknown',siblings:'Eldest'};
 const $=id=>document.getElementById(id);
+let currentCharacter;
 function optionList(select,items,selected){select.replaceChildren(...items.map(item=>{let option=document.createElement('option');option.value=option.textContent=item;option.selected=item===selected;return option}));}
 optionList($('archetype'),archetypes.map(x=>x.name),defaults.archetype);
 optionList($('custom-stat'),stats,'Strength');
@@ -111,18 +112,52 @@ function calculate(){
  if(archetype.name==='War veteran'&&processed&&severity)synergy('Steady Hands',{'Dexterity':5});
  let custom=Number($('custom-percent').value);if(!Number.isFinite(custom))custom=0;custom=Math.max(-100,Math.min(100,custom));if(custom)addEffect(totals,detail,'Custom what-if',{[$('custom-stat').value]:custom});
  const results=Object.fromEntries(stats.map(s=>{const base=s===$('custom-stat').value?Number($('base-stat').value):10;return [s,{base,raw:totals[s],capped:Math.max(-35,Math.min(35,totals[s])),value:base*(1+Math.max(-35,Math.min(35,totals[s]))/100),detail:detail[s]}]}));
+ currentCharacter={archetype,selected,results,synergies,custom};
  render(archetype,selected,results,synergies,custom);
 }
 function render(archetype,selected,results,synergies,custom){
  const name=$('character-name').value.trim()||'Unnamed character';$('tree-name').textContent=name;$('tree-archetype').textContent=archetype.name;$('preview-name').textContent=name;$('preview-archetype').textContent=archetype.name;$('archetype-summary').textContent=archetype.summary;$('preview-summary').textContent=archetype.summary;$('portrait-initials').textContent=name.split(/\s+/).slice(0,2).map(s=>s[0].toUpperCase()).join('');
  const tree=$('tree-groups');tree.replaceChildren();for(const [group,groupStats] of Object.entries(groups)){const wrap=document.createElement('section');wrap.className='tree-group';const head=document.createElement('h3');head.innerHTML=`<span class="branch-dot"></span>${group}<small>${groupStats.length} STATS</small>`;wrap.append(head);const cards=document.createElement('div');cards.className='stat-cards';for(const stat of groupStats){const r=results[stat];const card=document.createElement('article');card.className=`stat-card ${r.capped>0?'up':r.capped<0?'down':'even'} ${$('custom-stat').value===stat&&custom?'custom-active':''}`;card.tabIndex=0;card.setAttribute('aria-label',`${stat}: ${r.value.toFixed(1)}, change ${signed(r.capped)} percent`);const title=document.createElement('div');title.className='stat-title';title.innerHTML=`<span>${stat}</span><strong>${r.value.toFixed(1)}</strong>`;const bar=document.createElement('div');bar.className='stat-bar';const fill=document.createElement('span');fill.style.width=`${Math.max(8,Math.min(100,r.value/14*100))}%`;bar.append(fill);const footer=document.createElement('div');footer.className='stat-footer';const delta=document.createElement('span');delta.textContent=`${signed(r.capped)}% ${r.raw!==r.capped?'(capped)':''}`;const count=document.createElement('small');count.textContent=`${r.detail.length} effects`;footer.append(delta,count);const tip=document.createElement('div');tip.className='stat-tip';tip.textContent=r.detail.length?r.detail.map(x=>`${x.source} ${signed(x.delta)}%`).join(' · '):'No modifiers';card.append(title,bar,footer,tip);cards.append(card)}wrap.append(cards);tree.append(wrap)}
  const target=$('custom-stat').value;const r=results[target];$('base-value').textContent=r.base;$('sim-result').textContent=`${target}: base ${r.base} × (1 ${r.capped<0?'−':'+'} ${Math.abs(r.capped)}%) = ${r.value.toFixed(1)} · entered ${signed(custom)}% · total before cap ${signed(r.raw)}%`;
- const profile=$('origin-profile');profile.replaceChildren();for(const [label,value] of [['Born',selected.birth.name],['Raised',selected.raised.name],['Career',selected.career.name],['Schooling',selected.school.name],['Family',`${selected.parent1.name} / ${selected.parent2.name}`],['Siblings',selected.siblings.name]]){const dt=document.createElement('dt');dt.textContent=label;const dd=document.createElement('dd');dd.textContent=value;profile.append(dt,dd)}
+ const profile=$('origin-profile');profile.replaceChildren();const profileRows=[['Born',selected.birth.name],['Raised',selected.raised.name],['Career',selected.career.name],['Schooling',selected.school.name],['Family',`${selected.parent1.name} / ${selected.parent2.name}`],['Siblings',selected.siblings.name]];if($('appearance').value.trim())profileRows.push(['Appearance',$('appearance').value.trim()]);for(const [label,value] of profileRows){const dt=document.createElement('dt');dt.textContent=label;const dd=document.createElement('dd');dd.textContent=value;profile.append(dt,dd)}
  const top=[...stats].sort((a,b)=>results[b].value-results[a].value).slice(0,3);$('top-traits').replaceChildren(...top.map((stat,i)=>{const div=document.createElement('div');div.innerHTML=`<span class="trait-rank">0${i+1}</span><span>${stat}</span><strong>${results[stat].value.toFixed(1)}</strong>`;return div}));
- const activeThreads=[...$('origin-threads input:checked')].map(x=>x.value);const traumaPhrase=$('trauma-severity').value==='none'?'':` They carry ${$('trauma-severity').value} ${$('trauma-type').value.toLowerCase()}${$('trauma-processed').checked?', with some growth from processing it':''}.`;
+ const activeThreads=[...document.querySelectorAll('#origin-threads input:checked')].map(x=>x.value);const traumaPhrase=$('trauma-severity').value==='none'?'':` They carry ${$('trauma-severity').value} ${$('trauma-type').value.toLowerCase()}${$('trauma-processed').checked?', with some growth from processing it':''}.`;
  $('story-seed').textContent=`${name} is ${archetype.name.toLowerCase()}, raised in ${selected.raised.name.toLowerCase()} and shaped by ${selected.career.name.toLowerCase()}.${traumaPhrase}${activeThreads.length?` Open threads: ${activeThreads.join(', ')}.`:''}${synergies.length?` Tags: ${synergies.join(', ')}.`:''}`;
- $('tension-value').textContent=$('tension').value;const activeBeats=[...$('story-beats input:checked')].map(x=>x.value);const beat=$('beat-preview');beat.replaceChildren();const intro=document.createElement('p');intro.textContent=`${$('story-format').value} · Tension ${$('tension').value}/100`;const premise=document.createElement('p');premise.textContent=$('story-premise').value.trim()||'Add a premise to preview this story.';const list=document.createElement('div');list.className='beat-chips';for(const b of activeBeats){const chip=document.createElement('span');chip.textContent=b;list.append(chip)}beat.append(intro,premise,list);
+ $('tension-value').textContent=$('tension').value;const activeBeats=[...document.querySelectorAll('#story-beats input:checked')].map(x=>x.value);const beat=$('beat-preview');beat.replaceChildren();const intro=document.createElement('p');intro.textContent=`${$('story-format').value} · ${$('story-genre').value.trim()||'Genre unspecified'} · Tension ${$('tension').value}/100`;const premise=document.createElement('p');premise.textContent=$('story-premise').value.trim()||'Add a premise to preview this story.';const setting=document.createElement('p');setting.textContent=$('story-setting').value.trim()?`Setting: ${$('story-setting').value.trim()}`:'';const list=document.createElement('div');list.className='beat-chips';for(const b of activeBeats){const chip=document.createElement('span');chip.textContent=b;list.append(chip)}beat.append(intro,premise,setting,list);
 }
-document.querySelectorAll('input,select,textarea').forEach(el=>el.addEventListener('input',calculate));
+function characterCardText(){
+ const {archetype,selected,results,synergies,custom}=currentCharacter;
+ const name=$('character-name').value.trim()||'Unnamed character';
+ const threads=[...document.querySelectorAll('#origin-threads input:checked')].map(input=>input.value);
+ const traumaSeverity=$('trauma-severity').value;
+ const traumaText=traumaSeverity==='none'?'None':`${$('trauma-type').value} (${traumaSeverity}${$('trauma-processed').checked?', processed':''})`;
+ return [
+  'CHARACTER CARD',`Name: ${name}`,`Background archetype: ${archetype.name}`,`Background summary: ${archetype.summary}`,
+  `Appearance / visual cues: ${$('appearance').value.trim()||'Not specified'}`,'',
+  'ORIGIN',`Birth region: ${selected.birth.name}`,`Region raised: ${selected.raised.name}`,`Career: ${selected.career.name} (${ $('career-years').selectedOptions[0].textContent })`,
+  `Schooling: ${selected.school.name}`,`Parent / guardian 1: ${selected.parent1.name}`,`Parent / guardian 2: ${selected.parent2.name}`,`Sibling position: ${selected.siblings.name}`,
+  `Trauma: ${traumaText}`,`Open threads: ${threads.join(', ')||'None selected'}`,`Synergy tags: ${synergies.join(', ')||'None'}`,'',
+  'STATS',...stats.map(stat=>{const r=results[stat];return `${stat}: ${r.value.toFixed(1)} (base ${r.base}; ${signed(r.capped)}%${r.raw!==r.capped?`; ${signed(r.raw)}% before cap`:''})`}),
+  `What-if modifier: ${$('custom-stat').value} ${signed(custom)}%`,'Rule: all percentage changes add, then the total is capped at ±35% per stat.','',
+  'STORY SEED',$('story-seed').textContent
+ ].join('\n');
+}
+function storyDataText(){
+ const beatsSelected=[...document.querySelectorAll('#story-beats input:checked')].map(input=>input.value);
+ return ['STORY DATA',`Format: ${$('story-format').value}`,`Genre: ${$('story-genre').value.trim()||'Not specified'}`,`Premise: ${$('story-premise').value.trim()||'Not specified'}`,`Setting / visual world: ${$('story-setting').value.trim()||'Not specified'}`,`Book image direction: ${$('cover-direction').value.trim()||'Not specified'}`,`Opening tension: ${$('tension').value}/100`,`Story beats: ${beatsSelected.join(' → ')||'None selected'}`].join('\n');
+}
+async function copyText(text,statusId){
+ const status=$(statusId);
+ try{
+  let copied=false;
+  if(navigator.clipboard?.writeText){try{await navigator.clipboard.writeText(text);copied=true}catch{}}
+  if(!copied){const field=document.createElement('textarea');field.value=text;field.style.position='fixed';field.style.opacity='0';document.body.append(field);field.select();try{copied=document.execCommand('copy')}finally{field.remove()}}
+  if(!copied)throw new Error('Copy unavailable');
+  status.textContent='Copied to clipboard';
+ }catch{status.textContent='Copy failed. Check clipboard permission and retry.'}
+}
+$('copy-character').addEventListener('click',()=>copyText(characterCardText(),'character-copy-status'));
+$('copy-story').addEventListener('click',()=>copyText(storyDataText(),'story-copy-status'));
+document.querySelectorAll('input,select,textarea').forEach(el=>el.addEventListener('input',()=>{calculate();$('character-copy-status').textContent='';$('story-copy-status').textContent=''}));
 $('reset-button').addEventListener('click',()=>{location.reload()});
 calculate();
