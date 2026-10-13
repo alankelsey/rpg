@@ -3,6 +3,8 @@
 Date: 2026-09-27
 Status: exploration only. This document collects facts, options, and open questions so a later session can write the formal plan, RFC, and architecture documents. It makes recommendations but no final decisions.
 
+Research backlog addition: 2026-10-10 — other players influencing a playthrough (section 5.6). Earlier technical and pricing claims have not been revalidated by this addition; see [the modernization review](modernization-review.md) for the existing critique and corrections.
+
 Inputs read for this document:
 
 - `README.md` and `docs/Choose-your-own-adventure-rpg.md` in this repo (the starter story lives in `scene1.php` through `scene3.php`; the README itself is one line).
@@ -22,6 +24,7 @@ Inputs read for this document:
 - A later scale plan includes advertising and merch.
 - Interest in a RimWorld-style storyteller/director for dynamic stories, and eventually real LLM decisions and LLM content creation.
 - New asks for this exploration: let bots play, produce Hugging Face datasets, leaderboards (highest voted stories, authors, most read).
+- Research idea added 2026-10-10: other players' stats, choices, actions, and outcomes could influence a player's storylines, character development, and outcomes to a limited degree; see [section 5.6](#56-research-other-players-influencing-a-playthrough).
 
 ---
 
@@ -191,6 +194,37 @@ Cost note: options 1 and 2 can run offline or on demand with small hosted models
 
 RimWorld generates "tales" from what happened. The RPG equivalent is a chronicle: an auto-generated summary of a playthrough (choices, incidents, stat arcs, ending). It is a shareable artifact, a natural marketing surface, and a labelled dataset row.
 
+### 5.6 Research: other players influencing a playthrough
+
+Added 2026-10-10. **Status: idea to research, not an approved implementation or launch requirement.** Explore how other players' stats, choices, actions, and outcomes could affect a player's adventure to a bounded degree. This could trigger storylines, shape the player's character or NPC development, and influence available endings while preserving meaningful personal choices.
+
+Possible examples to investigate:
+
+- **Storylines:** enough players help local residents, increasing community trust and opening a mutual-aid quest; repeated conflict instead creates a reconciliation storyline.
+- **Character development:** the behavior or reputation of an opted-in group changes an NPC's initial attitude or presents a mentorship opportunity. The current player's response determines the relationship and any lasting trait or stat change.
+- **Outcomes:** collective progress rebuilding the town makes a recovery ending possible, while the player's own choices still determine whether they reach it. Research alternatives for players whose community does not reach the threshold.
+
+Compare several models before choosing an architecture:
+
+| Model | Source of influence | Main question |
+|---|---|---|
+| Community trends | Aggregated stats/actions within a story, faction, or season | Can broad trends create meaningful variation without a few prolific players dominating? |
+| Small groups | Contributions from an opted-in party or group of friends | How much direct influence is enjoyable, and what happens when members leave or stop playing? |
+| Past-playthrough echoes | Selected, validated events from earlier players' runs | Can asynchronous traces make the world feel connected without requiring players to be online together? |
+
+Research questions and pitfalls:
+
+1. **Scope and timing:** are signals global, per story/version, faction, group, or season? Compare snapshots at run start, chapter boundaries, and individual decisions. Define update windows and decay so old activity does not control the world indefinitely.
+2. **Agency and balance:** compare narrative flavor, optional branches, bounded stat/check modifiers, NPC changes, and ending eligibility. Evaluate author-controlled hooks, clear explanations, influence caps, and a solo/opt-out mode. Test whether effects feel connected to a shared world without making another player's behavior decide your character or invalidate an already presented choice.
+3. **Replay and saves:** a story version and seed cannot reproduce changing community input by themselves. Research immutable influence snapshots with IDs, rule versions, effective windows, and the actual values/events consumed by each run. Resume and replay must use recorded input, not today's totals. Define whether future chapters can receive fresh snapshots.
+4. **Abuse and feedback loops:** determine which contributions qualify and how to handle bots, duplicate accounts, coordinated groups, farming, and retries. Consider per-actor caps, deduplicated events, and delayed aggregation; prevent one action from being counted repeatedly or immediately amplifying itself through affected runs. Apply the modernization review's shared-storage and quota lessons to any authoritative influence service.
+5. **Privacy and participation:** decide what players agree to share and what recipients can see. Explore aggregate signals and minimum group sizes instead of exposing individual stats or private choices. Keep participation in shared gameplay separate from permission to export data for research.
+6. **Few players, offline play, and cost:** test zero/one/few-player populations, outages, and inactive groups. Compare authored neutral defaults, pinned cached snapshots, and delayed activation. Label simulated prototype data clearly. Assess whether periodic aggregation is sufficient before considering live synchronization.
+
+Proposed research exercise: replay the same short adventure, starting state, and choice sequence against authored neutral/helpful/adverse influence snapshots. Show how each affects one storyline, one character-development opportunity, and an ending condition. Check that each snapshot replays identically, ordinary progression remains viable, author limits hold, and a tester can explain the outside influence. Separately simulate sparse participation and abusive contribution patterns.
+
+Expected output: a short findings/decision note comparing the models, player feedback, fairness and abuse results, save/replay requirements, operating cost, and whether to proceed, revise, or defer. Begin with local fixtures after the single-player engine and save contract are established; a shared service would require durable storage and contribution validation. No real-time multiplayer or LLM dependency is assumed.
+
 ---
 
 ## 6. Bots playing the game
@@ -328,6 +362,8 @@ Option B or E: static front end, browser-side engine, serverless API, DynamoDB o
 9. **LLM**: text variation and incident ranking with cached, validated outputs; LLM bot benchmark ledger.
 10. **Monetization**: only after retention data exists.
 
+Research backlog: evaluate [cross-player influence](#56-research-other-players-influencing-a-playthrough) with local snapshots once the single-player engine and save contract are stable. Use the findings to decide whether it merits a later milestone.
+
 ---
 
 ## 12. Open questions for the RFC session
@@ -346,6 +382,7 @@ Option B or E: static front end, browser-side engine, serverless API, DynamoDB o
 12. Which LLM provider path first: local Ollama for development, Hugging Face Inference Providers for hosted runs (Binary-2048's measured costs apply), or Claude via the API for higher-quality content generation?
 13. Cost ceiling that triggers a stop: propose a hard $20/month alarm and a documented degrade switch.
 14. What to do with the PHP prototype and committed credentials.
+15. Cross-player influence: which community/group scope, snapshot timing, participation rules, and maximum effect preserve player agency while meaningfully changing storylines, character development, or outcomes? See section 5.6.
 
 ---
 

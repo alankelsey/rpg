@@ -202,3 +202,9 @@ Use tests that protect the contracts and observed failure boundaries:
 - **Deployment:** check the expected revision and real auth/write/read behavior, including unavailable dependencies. A green build or generic health response is insufficient acceptance.
 
 The immediate next implementation milestone should be a complete versioned “new town” adventure with one meaningful resource tradeoff, one later consequence, multiple endings, and reliable local save/resume. That is small enough to validate the product while establishing the engine and content contracts the larger ambitions depend on.
+
+## 9. Research addition: other players influencing your adventure
+
+Added 2026-10-10. Explore whether other players' stats, choices, actions, and outcomes can have a limited influence on your storylines, character development, and endings. The [research agenda in plan section 5.6](plan.md#56-research-other-players-influencing-a-playthrough) compares community trends, opted-in groups, and echoes of earlier playthroughs, with concrete examples and a proposed local experiment.
+
+This is a research topic rather than a launch commitment. Key questions are preserving player agency, limiting manipulation, supporting a small population and offline play, and recording the exact external input needed for save/resume and replay. Evaluate bounded, author-approved influence using local fixtures before committing to a shared service.
