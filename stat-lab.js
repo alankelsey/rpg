@@ -82,6 +82,23 @@ Scandal::Cunning,3|Charisma,-4`);
 const growth = {'Violence':{'Empathy':3},'Neglect':{'Charisma':3},'Loss':{'Mental Fortitude':3},'Addiction':{'Mental Fortitude':6},'Poverty':{'Cunning':3},'Scandal':{'Charisma':3}};
 const beats=['Opening','Buildup','Turning point','Climax','Ending'];
 const threads=['Estranged relative','Unknown parent','Unresolved hardship','A secret from the past','Someone left behind'];
+const physical=[
+ ['age','Age range',['Teen','20s','30s','40s','50s','60s','70+']],
+ ['gender','Gender presentation',['Feminine','Masculine','Androgynous']],
+ ['build','Build',['Slight','Lean','Average','Athletic','Muscular','Stocky','Heavyset']],
+ ['height','Height',['Short','Below average','Average','Tall','Very tall']],
+ ['skin','Skin tone',['Very fair','Fair','Light olive','Olive','Tan','Brown','Deep brown']],
+ ['hair','Hair',['Short dark','Long dark','Short light','Long light','Red','Curly','Braided','Gray / silver','Shaved / bald']],
+ ['eyes','Eye color',['Brown','Hazel','Green','Blue','Gray','Amber']]
+];
+const imageStyles={
+ 'Black & white ink':'black and white ink illustration, cross-hatching, high contrast, monochrome, graphic novel',
+ 'Fiction watercolor':'loose watercolor painting, soft washes, visible paper texture, muted palette, storybook fiction illustration',
+ 'Painterly illustration':'painterly digital illustration, visible brush strokes, rich color, character concept art',
+ 'Realistic':'photorealistic portrait photograph, natural light, 85mm lens, shallow depth of field, detailed skin texture',
+ 'Cinematic cover':'cinematic film still, dramatic lighting, moody color grade, anamorphic, book cover composition with space for title'
+};
+const ART_SERVER='http://127.0.0.1:4174';
 const defaults={archetype:'Rags to riches',birth:'Dense city',raised:'Inner city',career:'Manual trade',school:'Public',parent1:'Alive, close',parent2:'Unknown',siblings:'Eldest'};
 const $=id=>document.getElementById(id);
 let currentCharacter;
@@ -90,6 +107,8 @@ optionList($('archetype'),archetypes.map(x=>x.name),defaults.archetype);
 optionList($('custom-stat'),stats,'Strength');
 optionList($('trauma-type'),trauma.map(x=>x.name),'Loss');
 for(const layer of layers){const label=document.createElement('label');label.className='layer-field';label.textContent=layer.label;const select=document.createElement('select');select.id=layer.id;optionList(select,layer.items.map(x=>x.name),defaults[layer.id]);label.append(select);$('life-layers').append(label)}
+for(const [id,label,items] of physical){const field=document.createElement('label');field.className='layer-field';field.textContent=label;const select=document.createElement('select');select.id='phys-'+id;optionList(select,['Unspecified',...items],'Unspecified');field.append(select);$('physical-attributes').append(field)}
+optionList($('image-style'),Object.keys(imageStyles),'Painterly illustration');
 for(const thread of threads){const label=document.createElement('label');label.className='check-row';const input=document.createElement('input');input.type='checkbox';input.value=thread;label.append(input,document.createTextNode(thread));$('origin-threads').append(label)}
 for(const beat of beats){const label=document.createElement('label');label.className='check-row beat-row';const input=document.createElement('input');input.type='checkbox';input.value=beat;input.checked=true;label.append(input,document.createTextNode(beat));$('story-beats').append(label)}
 function addEffect(totals,detail,source,effects,scale=1,processed=false){for(const [stat,value] of Object.entries(effects)){const delta=value*scale*(processed&&value<0?.5:1);totals[stat]+=delta;detail[stat].push({source,delta})}}
@@ -134,6 +153,7 @@ function characterCardText(){
  return [
   'CHARACTER CARD',`Name: ${name}`,`Background archetype: ${archetype.name}`,`Background summary: ${archetype.summary}`,
   `Appearance / visual cues: ${$('appearance').value.trim()||'Not specified'}`,'',
+  'PHYSICAL',...physical.map(([id,label])=>`${label}: ${$('phys-'+id).value}`),`Distinguishing marks: ${$('distinguishing').value.trim()||'None'}`,'',
   'ORIGIN',`Birth region: ${selected.birth.name}`,`Region raised: ${selected.raised.name}`,`Career: ${selected.career.name} (${ $('career-years').selectedOptions[0].textContent })`,
   `Schooling: ${selected.school.name}`,`Parent / guardian 1: ${selected.parent1.name}`,`Parent / guardian 2: ${selected.parent2.name}`,`Sibling position: ${selected.siblings.name}`,
   `Trauma: ${traumaText}`,`Open threads: ${threads.join(', ')||'None selected'}`,`Synergy tags: ${synergies.join(', ')||'None'}`,'',
@@ -157,6 +177,15 @@ async function copyText(text,statusId){
  }catch{status.textContent='Copy failed. Check clipboard permission and retry.'}
 }
 $('copy-character').addEventListener('click',()=>copyText(characterCardText(),'character-copy-status'));
+$('generate-image').addEventListener('click',async()=>{
+ const button=$('generate-image'),status=$('image-status');button.disabled=true;status.textContent='Writing prompt and rendering… this can take a few minutes';
+ try{
+  const res=await fetch(`${ART_SERVER}/generate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({card:characterCardText(),story:storyDataText(),style:imageStyles[$('image-style').value],shot:$('image-shot').value})});
+  const body=await res.json();if(!res.ok)throw new Error(body.error||`HTTP ${res.status}`);
+  $('image-output').src=`${ART_SERVER}${body.url}`;$('image-prompt').textContent=body.prompt;$('image-result').hidden=false;status.textContent=`Saved ${body.file}`;
+ }catch(err){status.textContent=`Failed: ${err.message}. Is the art server running? See docs/image-generation.md`}
+ finally{button.disabled=false}
+});
 $('copy-story').addEventListener('click',()=>copyText(storyDataText(),'story-copy-status'));
 document.querySelectorAll('input,select,textarea').forEach(el=>el.addEventListener('input',()=>{calculate();$('character-copy-status').textContent='';$('story-copy-status').textContent=''}));
 $('reset-button').addEventListener('click',()=>{location.reload()});
