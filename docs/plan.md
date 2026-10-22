@@ -32,7 +32,7 @@ Inputs read for this document:
 
 ### 1.1 Owner decisions (2026-10-21)
 
-- **Audience and rollout:** the owner plays first, then friends, then it opens to anyone. No significant traffic is expected for a long time, if ever. Hosting can stay static and free until that changes.
+- **Audience and rollout:** the owner plays first, then friends, then it opens to anyone. No significant traffic is expected for a long time, if ever. Hosting can stay static and free until that changes. A plan for an unexpected spike (going viral) is in [scaling-plan.md](scaling-plan.md).
 - **Multiple stories:** the game will offer several stories. The landing page is a story picker, not the first story. A player who is mid-story is offered "continue" from the landing page.
 - **Saves:** each story keeps its own save slot. A player can save their spot, start or switch to a different story at any time, and come back to the first one where they left off. This makes the save model "one run per story" from milestone 1.
 - **Starter story:** the "new town" story is the build-and-test story for the engine, reader, and saves.
