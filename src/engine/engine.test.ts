@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { IllegalChoiceError, applyChoice, choiceViews, replay, sceneText, startRun } from './engine';
+import { IllegalChoiceError, applyChoice, choiceViews, explore, lockedChoicesSeen, lockedReason, replay, sceneText, startRun } from './engine';
 import { testStory as story } from './test-story';
 
 describe('startRun', () => {
@@ -72,5 +72,38 @@ describe('replay', () => {
     const history = ['store', 'mnms', 'hotel', 'help', 'hotel', 'checkin'];
     expect(replay(story, 'Mara', history)).toEqual(replay(story, 'Mara', history));
     expect(replay(story, 'Mara', history).stats).toMatchObject({ money: 1407, kindness: 10 });
+  });
+});
+
+describe('locked choices', () => {
+  it('explains visible stat requirements with what the player has', () => {
+    const run = { ...startRun(story, 'Mara'), sceneId: 'hotel', stats: { ...startRun(story, 'Mara').stats, money: 50 } };
+    const view = choiceViews(story, run).find((v) => v.choice.id === 'checkin')!;
+    expect(lockedReason(story, view, run)).toBe('Needs Money $90+ (you have $50)');
+  });
+
+  it('uses the lockedHint for flags and hidden stats', () => {
+    const view = { choice: { id: 'x', label: 'X', to: 'curb', lockedHint: 'Ask around first' }, available: false, failed: [{ flag: 'met', is: true }] };
+    expect(lockedReason(story, view, startRun(story, 'Mara'))).toBe('Ask around first');
+  });
+
+  it('lists locked choices seen during a run, once each', () => {
+    const history = ['hotel', 'hotel', 'hostel'];
+    expect(lockedChoicesSeen(story, 'Mara', history)).toEqual([]);
+  });
+});
+
+describe('explore', () => {
+  it('finds every ending in the fixture and no stuck states', () => {
+    const report = explore(story, 2000);
+    expect([...report.endings.keys()].sort()).toEqual(['hostel', 'rested']);
+    expect(report.stuck).toEqual([]);
+  });
+
+  it('stops at maxStates when a loop keeps changing stats', () => {
+    // The fixture's store loop spends money every time, so each lap is a new state.
+    const report = explore(story, 500);
+    expect(report.truncated).toBe(true);
+    expect(report.statesVisited).toBe(500);
   });
 });

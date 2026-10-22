@@ -54,6 +54,10 @@ export function validateStory(story: Story): Issue[] {
         if (!(key in story.stats)) error(cAt, `Changes unknown stat "${key}"`);
       }
       for (const flag of Object.keys(choice.effects?.flags ?? {})) setFlags.add(flag);
+      const vague = choice.requires?.some((c) => 'flag' in c || story.stats[c.stat]?.hidden);
+      if (vague && !choice.hideWhenLocked && !choice.lockedHint) {
+        warn(cAt, 'Shown when locked but depends on a flag or hidden stat; add a lockedHint');
+      }
     }
     if (choices.length > 0 && choices.every((c) => c.requires?.length && c.hideWhenLocked)) {
       warn(at, 'Every choice can be hidden; the player may see no way forward');

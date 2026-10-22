@@ -8,7 +8,7 @@ export const testStory: Story = {
   summary: 'Engine fixture.',
   start: 'curb',
   stats: {
-    money: { label: 'Money', initial: 1500, min: 0 },
+    money: { label: 'Money', initial: 1500, min: 0, format: 'money' },
     health: { label: 'Health', initial: 100, min: 0, max: 100 },
     energy: { label: 'Energy', initial: 50, min: 0, max: 100 },
     kindness: { label: 'Kindness', initial: 0, min: 0, max: 100 },

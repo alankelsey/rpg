@@ -1,0 +1,221 @@
+{
+  "id": "new-town",
+  "version": 1,
+  "title": "New Town",
+  "summary": "You step off a bus in a small town with $1,500 and a blue JanSport backpack. One week to find work and a place to live.",
+  "start": "curb",
+  "stats": {
+    "money": { "label": "Money", "initial": 1500, "min": 0, "format": "money" },
+    "health": { "label": "Health", "initial": 80, "min": 0, "max": 100 },
+    "energy": { "label": "Energy", "initial": 50, "min": 0, "max": 100 },
+    "kindness": { "label": "Kindness", "initial": 0, "min": 0, "max": 100 },
+    "junkMeals": { "label": "Junk meals", "initial": 0, "min": 0, "hidden": true }
+  },
+  "scenes": {
+    "curb": {
+      "title": "Day 1 · The Curb",
+      "text": "The bus pulls away and leaves you standing on a curb in a small town you've never seen before. Everything you own is in the blue JanSport on your back. There's $1,500 in your pocket.\n\nNobody here knows you. That's the point. It's a fresh start.\n\nAcross the street there's a convenience store, a name-brand four-star hotel, and a squat brick building with a sign that says UNEMPLOYMENT OFFICE.\n\nWhere do you want to start, {name}?",
+      "choices": [
+        { "id": "store", "label": "The convenience store", "to": "store" },
+        { "id": "hotel", "label": "The hotel", "to": "hotelFront" },
+        { "id": "office", "label": "The unemployment office", "to": "officeLate" }
+      ]
+    },
+    "store": {
+      "title": "Day 1 · Aisle Three",
+      "text": "You're hungry, and this store is the only thing open. You scan the aisles.\n\n\"Peanut M&M's?\" You keep looking. You've got nowhere to be. \"Or maybe this jerky?\"\n\nBetter just get one for now.",
+      "choices": [
+        { "id": "mnms", "label": "Peanut M&M's ($3) · quick energy", "to": "counter", "effects": { "stats": { "money": -3, "energy": 15, "junkMeals": 1 } } },
+        { "id": "jerky", "label": "Beef jerky ($8) · keeps you going", "to": "counter", "effects": { "stats": { "money": -8, "health": 5, "energy": 5 } } },
+        { "id": "nothing", "label": "Save your money", "to": "counter", "effects": { "stats": { "energy": -5 } } }
+      ]
+    },
+    "counter": {
+      "title": "Day 1 · The Counter",
+      "text": "Ahead of you in line, an older woman in a flour-dusted apron counts coins onto the counter twice. She's four dollars short on a bag of sugar and a carton of eggs.\n\n\"I'll run home and come back,\" she tells the cashier, though she doesn't look like she wants to.",
+      "choices": [
+        { "id": "cover", "label": "Cover the $4", "to": "curbEvening", "effects": { "stats": { "money": -4, "kindness": 15 }, "flags": { "helpedRosa": true } } },
+        { "id": "wait", "label": "Wait your turn", "to": "curbEvening" }
+      ]
+    },
+    "curbEvening": {
+      "title": "Day 1 · Evening",
+      "text": "Back out on the curb, the sun is going down behind the hotel. The lights in the unemployment office are still on, but not for long.",
+      "choices": [
+        { "id": "hotel", "label": "Find somewhere to sleep", "to": "hotelFront" },
+        { "id": "office", "label": "Try the unemployment office", "to": "officeLate" }
+      ]
+    },
+    "officeLate": {
+      "title": "Day 1 · Closing Time",
+      "text": "A clerk is pulling down the blinds as you walk in. \"We open at eight,\" she says, not unkindly. \"Board's full this week. Come early.\"\n\nShe hands you a flyer and locks the door behind you.",
+      "choices": [
+        { "id": "sleep", "label": "Find somewhere to sleep", "to": "hotelFront" }
+      ]
+    },
+    "hotelFront": {
+      "title": "Day 1 · Two Signs",
+      "text": "The hotel is the real thing: brass doors, a doorman, $90 a night.\n\nDirectly across the street is a hostel. It looks clean, just not as upscale. $45 a night, shared room.\n\nThere's also a bench in the little park between them.",
+      "choices": [
+        { "id": "hotel", "label": "The hotel ($90)", "to": "morning", "effects": { "stats": { "money": -90, "energy": 40, "health": 5 }, "flags": { "stayedHotel": true } } },
+        { "id": "hostel", "label": "The hostel ($45)", "to": "hostelNight", "effects": { "stats": { "money": -45, "energy": 25 } } },
+        { "id": "bench", "label": "The park bench (free)", "to": "morning", "effects": { "stats": { "energy": -15, "health": -10 } } }
+      ]
+    },
+    "hostelNight": {
+      "title": "Day 1 · Bunk Six",
+      "text": "Your bunkmate is a wiry guy named Dev, unlacing work boots caked in cardboard dust. \"New in town?\" he asks. \"Warehouse on Route 9 pays day labor in cash. No questions. Tell them Dev sent you.\"",
+      "choices": [
+        { "id": "ask", "label": "Ask him more about it", "to": "morning", "effects": { "stats": { "kindness": 5 }, "flags": { "heardWarehouse": true } } },
+        { "id": "sleep", "label": "Roll over and sleep", "to": "morning" }
+      ]
+    },
+    "morning": {
+      "title": "Day 2 · Morning",
+      "text": "Morning. The office opens at eight. You have time for breakfast if you want it.",
+      "choices": [
+        { "id": "donut", "label": "Coffee and a donut ($4)", "to": "office", "effects": { "stats": { "money": -4, "energy": 10, "junkMeals": 1 } } },
+        { "id": "diner", "label": "Eggs at the diner ($12)", "to": "office", "effects": { "stats": { "money": -12, "energy": 15, "health": 5 } } },
+        { "id": "skip", "label": "Skip it", "to": "office", "effects": { "stats": { "energy": -10 } } }
+      ]
+    },
+    "office": {
+      "title": "Day 2 · The Board",
+      "text": "The same clerk waves you over to a corkboard of index cards. \"Here's what's open this week, {name}.\"\n\nPinned in the corner, in careful handwriting: HELP WANTED: ROSA'S BAKERY, ELM ST.",
+      "choices": [
+        { "id": "dishwasher", "label": "Diner dishwasher, nights", "to": "jobDiner", "requires": [{ "stat": "energy", "gte": 40 }] },
+        {
+          "id": "warehouse",
+          "label": "Warehouse loader, full time",
+          "to": "jobWarehouse",
+          "requires": [{ "stat": "health", "gte": 75 }, { "stat": "junkMeals", "lte": 1 }],
+          "lockedHint": "Too much junk food has slowed you down."
+        },
+        {
+          "id": "daylabor",
+          "label": "Day labor at the Route 9 warehouse (cash)",
+          "to": "jobDayLabor",
+          "requires": [{ "flag": "heardWarehouse", "is": true }],
+          "lockedHint": "It isn't on the board. Someone would have to tell you about it."
+        },
+        {
+          "id": "frontdesk",
+          "label": "Hotel front desk",
+          "to": "jobFrontDesk",
+          "requires": [{ "flag": "stayedHotel", "is": true }],
+          "lockedHint": "The manager hires guests they've already met. You'd have to stay at the hotel."
+        },
+        {
+          "id": "bakery",
+          "label": "Rosa's Bakery",
+          "to": "jobBakery",
+          "requires": [{ "flag": "helpedRosa", "is": true }],
+          "lockedHint": "Rosa only hires people she already trusts."
+        },
+        { "id": "leave", "label": "None of these. Look on your own", "to": "wander" }
+      ]
+    },
+    "jobDiner": {
+      "title": "Days 2–7 · Dish Pit",
+      "text": "The night cook hands you an apron and points at a mountain of plates. The pay is steady. The free staff meal is fries, every night.",
+      "choices": [
+        { "id": "work", "label": "Get through the week", "to": "weekStay", "effects": { "stats": { "money": 450, "energy": -30, "junkMeals": 1 }, "flags": { "hasJob": true } } }
+      ]
+    },
+    "jobWarehouse": {
+      "title": "Days 2–7 · Loading Dock",
+      "text": "Ten-hour shifts lifting boxes off trucks. It's the best pay on the board, and your back lets you know about it.",
+      "choices": [
+        { "id": "work", "label": "Get through the week", "to": "weekStay", "effects": { "stats": { "money": 600, "health": -15, "energy": -20 }, "flags": { "hasJob": true } } }
+      ]
+    },
+    "jobDayLabor": {
+      "title": "Days 2–7 · Route 9",
+      "text": "Dev wasn't lying. Show up at six, get picked, get paid in cash at the end of the day. No paperwork, no pay stubs.",
+      "choices": [
+        { "id": "work", "label": "Get through the week", "to": "weekStay", "effects": { "stats": { "money": 300, "health": -10, "energy": -15 } } }
+      ]
+    },
+    "jobFrontDesk": {
+      "title": "Days 2–7 · Front Desk",
+      "text": "The manager remembers you from check-in. \"You were polite to the doorman. That's half the job.\" You get a blazer and a name tag.",
+      "choices": [
+        { "id": "work", "label": "Get through the week", "to": "weekStay", "effects": { "stats": { "money": 500, "energy": -10, "kindness": 5 }, "flags": { "hasJob": true } } }
+      ]
+    },
+    "jobBakery": {
+      "title": "Days 2–7 · Rosa's",
+      "text": "The woman from the store looks up from a tray of rolls. \"Four dollars,\" she says, and laughs. \"I remember. Can you be here at four in the morning?\"\n\nBy the end of the day she mentions there's a small room upstairs, if you need one.",
+      "choices": [
+        { "id": "work", "label": "Get through the week", "to": "weekStay", "effects": { "stats": { "money": 350, "kindness": 5 }, "flags": { "hasJob": true, "roomAboveBakery": true } } }
+      ]
+    },
+    "wander": {
+      "title": "Days 2–7 · Pounding Pavement",
+      "text": "You walk every street in town asking about work. You learn where everything is. Nobody's hiring.",
+      "choices": [
+        { "id": "keep", "label": "Keep looking all week", "to": "weekStay", "effects": { "stats": { "money": -40, "energy": -10 } } }
+      ]
+    },
+    "weekStay": {
+      "title": "The Rest of the Week",
+      "text": "Work, or the lack of it, fills your days. You still need somewhere to sleep every night.",
+      "choices": [
+        { "id": "hotel", "label": "The hotel all week ($630)", "to": "landlord", "effects": { "stats": { "money": -630, "energy": 20, "health": 5 } } },
+        { "id": "hostel", "label": "The hostel all week ($315)", "to": "landlord", "effects": { "stats": { "money": -315 } } },
+        {
+          "id": "bakeryRoom",
+          "label": "The room above the bakery ($100)",
+          "to": "landlord",
+          "requires": [{ "flag": "roomAboveBakery", "is": true }],
+          "lockedHint": "You'd need a landlord who already trusts you.",
+          "effects": { "stats": { "money": -100, "energy": 10 } }
+        },
+        { "id": "park", "label": "The park bench (free)", "to": "landlord", "effects": { "stats": { "health": -20, "energy": -20 } } }
+      ]
+    },
+    "landlord": {
+      "title": "Day 7 · For Rent",
+      "text": "A sign in a window on Elm Street: ONE BEDROOM. FIRST MONTH + DEPOSIT, $1,300. PROOF OF EMPLOYMENT REQUIRED.\n\nIt's been a week, {name}. Time to decide what this town is to you.",
+      "choices": [
+        {
+          "id": "lease",
+          "label": "Sign the lease ($1,300)",
+          "to": "keys",
+          "requires": [{ "stat": "money", "gte": 1300 }, { "flag": "hasJob", "is": true }],
+          "lockedHint": "The landlord wants pay stubs from a real job.",
+          "effects": { "stats": { "money": -1300 } }
+        },
+        {
+          "id": "stayRosa",
+          "label": "Stay on above the bakery",
+          "to": "bakery",
+          "requires": [{ "flag": "roomAboveBakery", "is": true }],
+          "lockedHint": "Rosa's spare room isn't offered to strangers."
+        },
+        { "id": "weekly", "label": "Another week at the hostel ($315)", "to": "weekly", "requires": [{ "stat": "money", "gte": 315 }], "effects": { "stats": { "money": -315 } } },
+        { "id": "bus", "label": "Buy a bus ticket out", "to": "bus" }
+      ]
+    },
+    "keys": {
+      "title": "Keys in Hand",
+      "text": "The landlord drops two keys into your palm. The apartment is empty except for the light coming through the window, and it's yours.\n\nYou set the blue JanSport down in the corner. You live here now.",
+      "ending": { "id": "keys", "title": "Keys in Hand", "tone": "good" }
+    },
+    "bakery": {
+      "title": "Flour on Your Sleeves",
+      "text": "The room above Rosa's smells like bread at four in the morning, every morning. She leaves a roll on the stairs for you most days.\n\nIt isn't much space. It's the first place in years that feels like someone's glad you're there.",
+      "ending": { "id": "bakery", "title": "Flour on Your Sleeves", "tone": "good" }
+    },
+    "weekly": {
+      "title": "One Week at a Time",
+      "text": "You pay for another week at the hostel and lie awake doing the math. It's not a home yet. But you're still here, and so is the town.",
+      "ending": { "id": "weekly", "title": "One Week at a Time", "tone": "neutral" }
+    },
+    "bus": {
+      "title": "Back on the Bus",
+      "text": "The same bus pulls up to the same curb. You climb on with the blue JanSport and take a window seat.\n\nThe town gets small behind you. Maybe the next one.",
+      "ending": { "id": "bus", "title": "Back on the Bus", "tone": "bad" }
+    }
+  }
+}

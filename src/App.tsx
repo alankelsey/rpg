@@ -1,12 +1,16 @@
-// Placeholder until the reader milestone: the landing page will become the story picker.
+import { useEffect, useState } from 'react';
+import { StoryPicker } from './StoryPicker';
+import { Reader } from './Reader';
+import { currentRoute } from './router';
+
 export function App() {
-  return (
-    <main>
-      <h1>Choose Your Own Adventure RPG</h1>
-      <p>The story picker and reader are coming next. The engine lives in <code>src/engine/</code>.</p>
-      <p>
-        <a href="/stat-lab.html">Open stat-lab</a> (dev server only)
-      </p>
-    </main>
-  );
+  const [route, setRoute] = useState(currentRoute);
+
+  useEffect(() => {
+    const onHash = () => setRoute(currentRoute());
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+
+  return route.storyId ? <Reader key={route.storyId} storyId={route.storyId} /> : <StoryPicker />;
 }

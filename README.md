@@ -16,7 +16,7 @@ Planning, with a design sandbox. No playable game yet. The next milestone is a c
 
 ## Development
 
-Requires Node 22 (`nvm use` reads `.nvmrc`).
+Requires Node 22 (`nvm use` reads `.nvmrc`). The landing page is the story picker; stories live in `src/stories/` and are checked by `npm test` (validation plus an explorer that plays every path).
 
 ```
 npm install

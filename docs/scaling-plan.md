@@ -35,21 +35,44 @@ At about 0.5 MB per new player, 100,000 new players is roughly 50 GB. Most CDN f
 
 Stages 0–2 don't need a backend. Going viral during them means more bandwidth, not new infrastructure.
 
-## 3. Hosting choice: pick for the spike, not the average
+## 3. Hosting choice: Cloudflare or AWS
 
-Choose a static host whose free tier **doesn't take the site offline or bill heavily when bandwidth jumps**.
+Both can host this game. The deciding question is **what happens when traffic or usage goes past the free allowance**.
 
-| Host | Fit | Spike behavior to check |
+| | Cloudflare (Pages + Workers + D1) | AWS (S3 + CloudFront, later Lambda + DynamoDB) |
 |---|---|---|
-| **Cloudflare Pages** (recommended) | Static sites, global CDN, free custom domain and HTTPS. Pairs with Workers and D1 if a backend is needed later. | Static asset requests have historically been free and unmetered. Confirm current terms. |
-| GitHub Pages | Simplest; deploys from the repo. | Has a soft monthly bandwidth limit and usage terms that discourage commercial use. Fine for stages 0–1. |
-| Netlify / Vercel | Good developer experience. | Free tiers meter bandwidth; going over can pause the site or require a paid plan. |
-| S3 + CloudFront (AWS) | Full control; Binary-2048 experience. | Pay per GB beyond free allowances; needs budget alarms. |
+| Static site bandwidth | Static asset requests have historically been free and unmetered on Pages. | CloudFront's always-free tier has historically included a large monthly transfer allowance (on the order of 1 TB); beyond it you pay per GB. |
+| Over the free limit | Free-plan Workers and D1 **stop serving** (requests fail) when daily limits are hit. Nothing is billed. | Usage **keeps working and is billed**. Budget alarms notify, possibly hours later; they don't stop spending. |
+| Setup for a static site | Connect the GitHub repo, pick the build command. HTTPS and the CDN are automatic. | S3 bucket, CloudFront distribution with origin access control, ACM certificate in us-east-1, DNS (Route 53 hosted zone is about $0.50/month). More pieces, but well understood. |
+| Backend later | Workers (JavaScript at the edge) and D1 (SQLite). Smaller ecosystem; D1 limits need graceful degradation. | Lambda, DynamoDB, Cognito, SES. Largest ecosystem; you already have Binary-2048 code and budget templates. |
+| Your experience | New platform to learn. | Familiar from Binary-2048. |
+| Lock-in | Low for the static site. Workers code is mostly portable JavaScript. | Low for the static site. DynamoDB data models are AWS-specific. |
 
-Rules that keep moving hosts cheap:
+**Binary-2048's AWS trouble doesn't apply here.** Its problems came from Amplify server rendering talking to MongoDB Atlas (no stable outbound IP, secrets baked into the bundle). A static site on S3 + CloudFront has none of those parts.
 
-- **Buy a custom domain early** and point it at the host. If a host's limits change, you move the files and update DNS, and players' links still work.
-- **Saves are tied to the domain.** Browser storage belongs to one origin (domain), so changing domains loses local saves. That's another reason to settle the domain before the public stages, and to ship save export/import in milestone 1.
+**Recommendation:** Cloudflare Pages for the static game, because a viral spike can't turn into a surprise bill and setup is a few clicks. Choose AWS instead if you'd rather stay on a platform you know and plan to build the backend on Lambda + DynamoDB. In that case, add the hard limits from section 5 (rate limits, quotas, off switches) before any backend goes live, since AWS won't stop spending for you.
+
+Either way:
+
+- **Buy a custom domain early** and point it at the host. If you change hosts, you move the files and update DNS, and players' links still work.
+- **Saves are tied to the domain.** Browser storage belongs to one origin, so changing domains loses local saves. Settle the domain before the public stages. Save export/import is already in the game for recovery.
+- GitHub Pages is fine for stages 0–1 if you want zero setup, but it has a soft bandwidth limit and terms that discourage commercial use.
+
+### 3.1 Prepare hosting now, turn services on later
+
+Yes, both platforms support setting everything up ahead of time with optional services off, at little or no cost while idle.
+
+**Now (stages 0–1):**
+
+1. Register the domain and set up DNS.
+2. Deploy the static site from `main` (or a release branch) with preview deploys for other branches. Cloudflare Pages and AWS Amplify Hosting (static mode, not server rendering) both build from GitHub; for plain S3 + CloudFront, use a GitHub Actions workflow.
+3. Set long cache headers for `/assets/*` (hashed filenames) and short ones for `index.html`.
+4. Add `public/config.json` with every future service listed and set to off, for example `{ "accountSync": false, "submissions": false, "voting": false, "artGeneration": false, "llm": false, "readOnly": false }`. The app reads it at startup and hides anything that's off. Changing a switch is a redeploy of one file, with no rebuild of the game.
+5. AWS only: create the budget alarms ($5, $10, $20) from Binary-2048's `aws-budget-template.json` now.
+
+**Defined but not deployed (stage 3 prep):** keep backend infrastructure as code in the repo (`infra/`): Wrangler config for Workers + D1, or AWS CDK/Terraform for Lambda + DynamoDB. Deploy it to a staging environment when a feature is ready, and leave the production switch off until the feature passes its gate in section 2.
+
+**Why not deploy idle backend services to production early:** on-demand Lambda, DynamoDB, Workers, and D1 cost little or nothing when idle, so cost isn't the issue. The issues are attack surface and upkeep. An endpoint that exists can be found and abused even if the app never calls it, and idle infrastructure still needs dependency and permission updates. Turning a feature on should be "deploy the stack, then flip the switch", both rehearsed in staging.
 
 ## 4. Spike runbook (what to do when traffic jumps)
 
@@ -87,13 +110,13 @@ Rules that keep moving hosts cheap:
 - [ ] Images resized and compressed (WebP/AVIF), lazy-loaded, with a total size budget per story.
 - [ ] Save export/import works, so players can recover from cleared storage or a domain change.
 - [ ] Host analytics and a traffic or bandwidth alert are on.
-- [ ] `config.json` feature switches exist, even if only for future features.
+- [ ] `public/config.json` feature switches exist (section 3.1), even if only for future features.
 - [ ] Supporter/donation link and a simple "about / contact" page.
 - [ ] Error reporting that doesn't need a server you run (or none, plus a feedback link).
 - [ ] One rehearsal: simulate the runbook (check bandwidth numbers, flip a switch, redeploy) and time it.
 
 ## 7. Open items
 
-- Pick the host and domain (recommendation: Cloudflare Pages plus a domain you own). Verify current free-tier terms and record the date.
+- Pick the host (Cloudflare Pages recommended; AWS if you prefer the familiar platform) and buy the domain. Verify current free-tier terms and record the date.
 - Set a monthly spending ceiling that triggers read-only mode once a backend exists ([plan question 13](plan.md#12-open-questions-for-the-rfc-session) proposes $20).
 - Decide whether a spike should trigger fundraising (supporter link) or just cost control.

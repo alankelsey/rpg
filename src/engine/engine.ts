@@ -82,6 +82,120 @@ export function replay(story: Story, playerName: string, history: readonly strin
   return history.reduce((state, choiceId) => applyChoice(story, state, choiceId), startRun(story, playerName));
 }
 
+export function formatStat(story: Story, stat: string, value: number): string {
+  return story.stats[stat]?.format === 'money' ? `$${value.toLocaleString('en-US')}` : String(value);
+}
+
+/**
+ * Why a locked choice is locked, for the player. Visible stats get an exact "you have" line;
+ * flags and hidden stats use the choice's lockedHint, since the player can't see them.
+ */
+export function lockedReason(story: Story, view: ChoiceView, state: RunState): string {
+  const parts: string[] = [];
+  let needsHint = false;
+  for (const c of view.failed) {
+    if ('flag' in c || story.stats[c.stat]?.hidden) {
+      needsHint = true;
+      continue;
+    }
+    const label = story.stats[c.stat]?.label ?? c.stat;
+    const have = formatStat(story, c.stat, state.stats[c.stat] ?? 0);
+    if (c.gte !== undefined && (state.stats[c.stat] ?? 0) < c.gte) {
+      parts.push(`Needs ${label} ${formatStat(story, c.stat, c.gte)}+ (you have ${have})`);
+    } else if (c.lte !== undefined) {
+      parts.push(`Needs ${label} ${formatStat(story, c.stat, c.lte)} or less (you have ${have})`);
+    }
+  }
+  if (needsHint) parts.push(view.choice.lockedHint ?? 'Something has to happen first');
+  return parts.join('. ');
+}
+
+export interface LockedSighting {
+  sceneId: string;
+  choiceId: string;
+  label: string;
+  reason: string;
+}
+
+/** Locked choices the player saw during a run, for the "paths you couldn't take" list at the end. */
+export function lockedChoicesSeen(story: Story, playerName: string, history: readonly string[]): LockedSighting[] {
+  const seen = new Map<string, LockedSighting>();
+  let state = startRun(story, playerName);
+  const record = () => {
+    for (const view of choiceViews(story, state)) {
+      const key = `${state.sceneId}/${view.choice.id}`;
+      if (!view.available && !seen.has(key)) {
+        seen.set(key, {
+          sceneId: state.sceneId,
+          choiceId: view.choice.id,
+          label: view.choice.label,
+          reason: lockedReason(story, view, state),
+        });
+      }
+    }
+  };
+  record();
+  for (const choiceId of history) {
+    state = applyChoice(story, state, choiceId);
+    record();
+  }
+  return [...seen.values()];
+}
+
+export function endingsOf(story: Story): { sceneId: string; ending: NonNullable<Scene['ending']> }[] {
+  return Object.entries(story.scenes).flatMap(([sceneId, scene]) => (scene.ending ? [{ sceneId, ending: scene.ending }] : []));
+}
+
+export interface ExploreReport {
+  /** Ending id -> one choice history that reaches it. */
+  endings: Map<string, string[]>;
+  /** States with no available choice that aren't endings. */
+  stuck: { sceneId: string; history: string[] }[];
+  /** `sceneId/choiceId` for choices that were never available in any explored state. */
+  neverAvailable: string[];
+  statesVisited: number;
+  /** True when maxStates was hit before every state was explored. */
+  truncated: boolean;
+}
+
+/** Plays every reachable path (bounded) to check that endings are reachable with real stats. */
+export function explore(story: Story, maxStates = 20000): ExploreReport {
+  const endings = new Map<string, string[]>();
+  const stuck: ExploreReport['stuck'] = [];
+  const everAvailable = new Set<string>();
+  const visited = new Set<string>();
+  const stack = [startRun(story, 'Explorer')];
+  let truncated = false;
+
+  while (stack.length > 0) {
+    const state = stack.pop()!;
+    const key = JSON.stringify([state.sceneId, state.stats, state.flags]);
+    if (visited.has(key)) continue;
+    if (visited.size >= maxStates) {
+      truncated = true;
+      break;
+    }
+    visited.add(key);
+
+    const ending = getScene(story, state.sceneId).ending;
+    if (ending) {
+      if (!endings.has(ending.id)) endings.set(ending.id, state.history);
+      continue;
+    }
+    const open = choiceViews(story, state).filter((v) => v.available);
+    if (open.length === 0) stuck.push({ sceneId: state.sceneId, history: state.history });
+    for (const view of open) {
+      everAvailable.add(`${state.sceneId}/${view.choice.id}`);
+      stack.push(applyChoice(story, state, view.choice.id));
+    }
+  }
+
+  const neverAvailable = Object.entries(story.scenes).flatMap(([sceneId, scene]) =>
+    (scene.choices ?? []).map((c) => `${sceneId}/${c.id}`).filter((id) => !everAvailable.has(id)),
+  );
+  return { endings, stuck, neverAvailable, statesVisited: visited.size, truncated };
+}
+
 function applyEffects(story: Story, state: RunState, choice: Choice): RunState {
   const stats = { ...state.stats };
   for (const [key, delta] of Object.entries(choice.effects?.stats ?? {})) {

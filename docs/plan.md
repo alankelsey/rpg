@@ -36,6 +36,7 @@ Inputs read for this document:
 - **Multiple stories:** the game will offer several stories. The landing page is a story picker, not the first story. A player who is mid-story is offered "continue" from the landing page.
 - **Saves:** each story keeps its own save slot. A player can save their spot, start or switch to a different story at any time, and come back to the first one where they left off. This makes the save model "one run per story" from milestone 1.
 - **Starter story:** the "new town" story is the build-and-test story for the engine, reader, and saves.
+- **Locked choices are shown, not hidden:** a choice the player doesn't meet the requirements for stays visible but disabled, with a hint ("Needs Money $1,300+ (you have $1,273)"). The ending screen lists the paths the player couldn't take and the endings found so far, to encourage replays. Authors can still hide a choice for secrets.
 - **Front end:** Vite + React + TypeScript is the working default. Alternatives and tradeoffs are in [frontend-stack.md](frontend-stack.md).
 - **stat-lab:** `stat-lab.html` (character and story generation) and the local art tools in `tools/` stay in the repo under that name as a testing sandbox. They will become part of the game later, either integrated or rewritten.
 - **PHP prototype:** removed. The database it used no longer exists, so the old credentials in history need no action.

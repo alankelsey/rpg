@@ -9,6 +9,8 @@ export interface StatDef {
   max?: number;
   /** Hidden stats (meta stats such as junk meals) are tracked but not shown to the player. */
   hidden?: boolean;
+  /** Display format. `money` shows as $1,500. */
+  format?: 'money';
 }
 
 /** A deterministic check. All listed comparisons must hold. */
@@ -29,8 +31,13 @@ export interface Choice {
   to: string;
   requires?: Condition[];
   effects?: Effects;
-  /** When locked, hide the choice instead of showing it disabled. */
+  /**
+   * Locked choices are shown disabled by default, so players see paths to try on a replay.
+   * Set this to hide the choice instead (for secrets).
+   */
   hideWhenLocked?: boolean;
+  /** Explains locked flag or hidden-stat conditions. Visible stat conditions get generated "Needs ..." text. */
+  lockedHint?: string;
 }
 
 export interface Ending {
