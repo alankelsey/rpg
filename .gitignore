@@ -25,4 +25,9 @@ Thumbs.db
 
 # Logs
 *.log
-characters/portraits/
+
+# Claude Code personal settings
+.claude/settings.local.json
+
+# Generated character art and runs (tools/make-characters.mjs, tools/art-server.mjs)
+characters/

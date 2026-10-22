@@ -5,10 +5,12 @@ Status: exploration only. This document collects facts, options, and open questi
 
 Research backlog addition: 2026-10-10 — other players influencing a playthrough (section 5.6). Earlier technical and pricing claims have not been revalidated by this addition; see [the modernization review](modernization-review.md) for the existing critique and corrections.
 
+Update 2026-10-21: owner decisions recorded in [section 1.1](#11-owner-decisions-2026-10-21). The PHP prototype was removed; its story text and ideas are preserved in [legacy-prototype.md](legacy-prototype.md). Section 2.3 and question 14 are resolved.
+
 Inputs read for this document:
 
-- `README.md` and `docs/Choose-your-own-adventure-rpg.md` in this repo (the starter story lives in `scene1.php` through `scene3.php`; the README itself is one line).
-- The PHP prototype in this repo (all `*.php` files).
+- `README.md` and `docs/Choose-your-own-adventure-rpg.md` in this repo (the starter story lived in `scene1.php` through `scene3.php`, now preserved in [legacy-prototype.md](legacy-prototype.md); the README itself was one line).
+- The PHP prototype in this repo (all `*.php` files; last present in commit `7d0c296`).
 - `../Binary-2048`: README, `docs/*.md`, `lib/binary2048/{leaderboard,run-store,rate-limit}.ts`, `next.config.mjs`, `auth.ts`, `package.json`, `.env.example`, `infra/`.
 
 ---
@@ -28,11 +30,23 @@ Inputs read for this document:
 
 ---
 
+### 1.1 Owner decisions (2026-10-21)
+
+- **Audience and rollout:** the owner plays first, then friends, then it opens to anyone. No significant traffic is expected for a long time, if ever. Hosting can stay static and free until that changes.
+- **Multiple stories:** the game will offer several stories. The landing page is a story picker, not the first story. A player who is mid-story is offered "continue" from the landing page.
+- **Saves:** each story keeps its own save slot. A player can save their spot, start or switch to a different story at any time, and come back to the first one where they left off. This makes the save model "one run per story" from milestone 1.
+- **Starter story:** the "new town" story is the build-and-test story for the engine, reader, and saves.
+- **Front end:** Vite + React + TypeScript is the working default. Alternatives and tradeoffs are in [frontend-stack.md](frontend-stack.md).
+- **stat-lab:** `stat-lab.html` (character and story generation) and the local art tools in `tools/` stay in the repo under that name as a testing sandbox. They will become part of the game later, either integrated or rewritten.
+- **PHP prototype:** removed. The database it used no longer exists, so the old credentials in history need no action.
+
 ## 2. What exists today in this repo
 
-### 2.1 The PHP prototype
+Current state (2026-10-21): planning docs in `docs/`, the stat-lab sandbox (`stat-lab.html`, `stat-lab.js`, `stat-lab.css`), and local art tools in `tools/`. Sections 2.1 to 2.3 describe the removed prototype for reference.
 
-The repo is a 2013-era PHP prototype targeting GoDaddy shared hosting with MySQL.
+### 2.1 The PHP prototype (removed)
+
+The repo was a 2013-era PHP prototype targeting GoDaddy shared hosting with MySQL. Its ideas are catalogued in [legacy-prototype.md](legacy-prototype.md).
 
 - Flow: `intro.php` collects a name, `scene1.php` posts a radio choice to `index.php`, and `sceneselect.php` includes `scene<N>.php` by number. Scenes are hardcoded HTML.
 - Stats: `player.php` declares level, health, strength, kindness as globals with setter/getter functions. Nothing persists. `statstab.php` renders them in the header.
@@ -50,10 +64,10 @@ Extracted from `scene1.php` to `scene3.php`:
 
 Implied stats from the prototype: level, health, strength, kindness, money (implicit from $1500 and prices), energy (from the M&Ms option).
 
-### 2.3 Problems to resolve before any new work
+### 2.3 Problems to resolve before any new work (resolved 2026-10-21)
 
-- **Plaintext credentials are committed.** `connect.php`, `db.php`, `player.php`, `c`, and `test.php` contain database hostnames, usernames, and passwords, and `.connect.php.swp` is a Vim swap file with the same content. Rotate or confirm the accounts are dead, then purge from history or accept that the history is public. Recommendation for the RFC: archive the PHP prototype under `legacy/` or delete it, keep the story text, and add a `.gitignore` for swap files.
-- No build, no tests, no data model, no persistence. Nothing here is reusable as code. The value is the story text and the stat concept.
+- **Old credentials in history.** Commit `263aa91` and the historical `.connect.php.swp` contain literal database connection settings; later commits replaced them with `getenv()` and `.gitignore` excludes swap files. The owner confirmed the database and hosting account no longer exist, so no rotation or history rewrite is needed.
+- **Prototype code.** It had no build, tests, data model, or persistence, and nothing was reusable as code. It was deleted; the story text, stat concept, and other ideas are kept in [legacy-prototype.md](legacy-prototype.md).
 
 ---
 
@@ -65,7 +79,7 @@ Binary-2048 is a Next.js 15 App Router app on AWS Amplify `WEB_COMPUTE` (SSR + A
 
 | Pattern | Where in Binary-2048 | Why it matters for the RPG |
 |---|---|---|
-| Store adapter with `memory` default and `mongo` option, selected by env | `lib/binary2048/leaderboard.ts`, `run-store.ts`, `rate-limit.ts`, `session-store.ts` | Lets the RPG run with zero infra locally and in early prod. Mongo store fails closed with a bounded `serverSelectionTimeoutMS` instead of hanging. |
+| Store adapter with `memory` default and `mongo` option, selected by env | `lib/binary2048/leaderboard.ts`, `run-store.ts`, `rate-limit.ts`, `session-store.ts` | Lets the RPG run with zero infra locally and in demos. Memory is not suitable for authoritative production data (see 3.2); browser-local saves are a separate, explicit product mode. Mongo store fails closed with a bounded `serverSelectionTimeoutMS` instead of hanging. |
 | Deterministic seed + replay model | `engine.ts`, `replay-*.ts`, `docs/replay-storage-strategy.md` | A playthrough = (story version, seed, choice list). Reproducible, tiny to store, verifiable, and the natural training-data record. |
 | Bot API with encoded state, legal actions, and action mask | `docs/bot-api-quickstart.md`, `app/api/games/[id]/encoded` | Same shape works for a story: `legalChoices`, `choiceMask`, encoded stats. |
 | LLM adapter that ranks engine-computed candidates instead of simulating rules | `docs/ollama-bot.md`, `scripts/hf-bot.mjs` | For the RPG, the engine computes each choice's stat check result and deltas; the LLM only picks. This is also the safe shape for the storyteller. |
@@ -352,7 +366,7 @@ Option B or E: static front end, browser-side engine, serverless API, DynamoDB o
 ## 11. Phasing sketch for the formal plan
 
 1. **Engine and format**: story schema, validator, deterministic engine (TypeScript, browser and Node), stats and meta stats, checks and effects. Convert the starter story. Unit tests. No server.
-2. **Play**: static site that loads a story version and plays it. Local save. Chronicle at the end.
+2. **Play**: static site with a story picker as the landing page ("continue" shown when a run is in progress). Loads a story version and plays it. One local save per story, so players can switch stories and resume. Chronicle at the end.
 3. **Accounts, persistence, submissions**: auth, playthrough checkpoint API, story publishing, versioning.
 4. **Community paths**: proposals, voting windows, moderation queue, merge to new version, author attribution.
 5. **Leaderboards**: votes, reads, authors, snapshots.
@@ -368,7 +382,7 @@ Research backlog: evaluate [cross-player influence](#56-research-other-players-i
 
 ## 12. Open questions for the RFC session
 
-1. Framework: keep Next.js for consistency with Binary-2048, or a lighter static stack (Vite + React) since SSR is not required?
+1. Framework: keep Next.js for consistency with Binary-2048, or a lighter static stack (Vite + React) since SSR is not required? **Working default 2026-10-21: Vite + React + TypeScript; comparison in [frontend-stack.md](frontend-stack.md).**
 2. Data store: DynamoDB (IAM, no allowlist) versus Atlas M0 (familiar, unresolved egress issue)?
 3. Auth provider: NextAuth-style OAuth on a Lambda, Cognito, or a third-party free tier?
 4. Are stat checks deterministic by default, with seeded rolls opt-in?
@@ -381,7 +395,7 @@ Research backlog: evaluate [cross-player influence](#56-research-other-players-i
 11. Storyteller scope for v1: meta-stat triggers only, or the full tension loop?
 12. Which LLM provider path first: local Ollama for development, Hugging Face Inference Providers for hosted runs (Binary-2048's measured costs apply), or Claude via the API for higher-quality content generation?
 13. Cost ceiling that triggers a stop: propose a hard $20/month alarm and a documented degrade switch.
-14. What to do with the PHP prototype and committed credentials.
+14. ~~What to do with the PHP prototype and committed credentials.~~ Resolved 2026-10-21: prototype deleted, ideas kept in [legacy-prototype.md](legacy-prototype.md), database confirmed gone.
 15. Cross-player influence: which community/group scope, snapshot timing, participation rules, and maximum effect preserve player agency while meaningfully changing storylines, character development, or outcomes? See section 5.6.
 
 ---
