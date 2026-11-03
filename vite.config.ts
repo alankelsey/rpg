@@ -1,10 +1,17 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 
-// stat-lab.html is served as-is by the dev server (/stat-lab.html). It is not part of
-// the production build yet; it uses a classic script that Vite does not bundle.
 export default defineConfig({
   plugins: [react()],
+  build: {
+    rollupOptions: {
+      // Keep the React reader and the standalone character workshop in one static build.
+      input: {
+        app: 'index.html',
+        statLab: 'stat-lab.html',
+      },
+    },
+  },
   test: {
     include: ['src/**/*.test.ts'],
   },

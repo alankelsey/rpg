@@ -7,6 +7,8 @@ Research backlog addition: 2026-10-10 — other players influencing a playthroug
 
 Update 2026-10-21: owner decisions recorded in [section 1.1](#11-owner-decisions-2026-10-21). The PHP prototype was removed; its story text and ideas are preserved in [legacy-prototype.md](legacy-prototype.md). Section 2.3 and question 14 are resolved.
 
+Update 2026-10-29: Stage 1 is not complete with the playable story alone. It also includes experimentation with a visual branching viewer/editor, connecting choices to passage nodes, a visual multiple-endings tree, state tracking, and navigation between map, editing, and play views. The source notes are in [RPG and Choose Your Own Adventure Components.docx](RPG%20and%20Choose%20Your%20Own%20Adventure%20Components.docx); the completion gate is defined in [the modernization review](modernization-review.md#stage-1-experimentation-scope).
+
 Inputs read for this document:
 
 - `README.md` and `docs/Choose-your-own-adventure-rpg.md` in this repo (the starter story lived in `scene1.php` through `scene3.php`, now preserved in [legacy-prototype.md](legacy-prototype.md); the README itself was one line).
@@ -40,6 +42,7 @@ Inputs read for this document:
 - **Front end:** Vite + React + TypeScript is the working default. Alternatives and tradeoffs are in [frontend-stack.md](frontend-stack.md).
 - **stat-lab:** `stat-lab.html` (character and story generation) and the local art tools in `tools/` stay in the repo under that name as a testing sandbox. They will become part of the game later, either integrated or rewritten.
 - **PHP prototype:** removed. The database it used no longer exists, so the old credentials in history need no action.
+- **Stage 1 scope:** the playable reader is the foundation, not the end of Stage 1. The read-only map is the first structure experiment. Before investing in more editor UI, complete the versioned engine/run/save contract, condition and effect rules, deterministic transition results, import/replay validation, and state-aware exploration in [engine-state-roadmap.md](engine-state-roadmap.md). Then use the "New Town" graph to continue editing and connection experiments, visualize state-dependent routes to multiple endings, and navigate between the map, editor, and playable preview. Record the selected approach and rejected alternatives before building the production author workflow in Stage 2.
 
 ## 2. What exists today in this repo
 
@@ -366,7 +369,7 @@ Option B or E: static front end, browser-side engine, serverless API, DynamoDB o
 
 ## 11. Phasing sketch for the formal plan
 
-1. **Engine and format**: story schema, validator, deterministic engine (TypeScript, browser and Node), stats and meta stats, checks and effects. Convert the starter story. Unit tests. No server.
+1. **Engine and format**: finish the versioned story/run/save contract, validator, deterministic transition/events API, stats and meta stats, supported checks/effects, strict replay/import, and state-aware exploration in [engine-state-roadmap.md](engine-state-roadmap.md). Keep it usable in browser and Node. Unit tests. No server.
 2. **Play**: static site with a story picker as the landing page ("continue" shown when a run is in progress). Loads a story version and plays it. One local save per story, so players can switch stories and resume. Chronicle at the end.
 3. **Accounts, persistence, submissions**: auth, playthrough checkpoint API, story publishing, versioning.
 4. **Community paths**: proposals, voting windows, moderation queue, merge to new version, author attribution.

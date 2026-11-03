@@ -5,13 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Character Atlas · RPG editor preview</title>
   <link rel="stylesheet" href="stat-lab.css?v=2">
-  <script src="stat-lab.js?v=2" defer></script>
+  <script type="module" src="/stat-lab.js"></script>
 </head>
 <body>
   <div class="app-shell">
     <aside class="rail" aria-label="Editor navigation">
       <a class="brand" href="stat-lab.html" aria-label="Character Atlas home"><span class="brand-mark">✦</span><span>ATLAS<br><small>RPG WORKSHOP</small></span></a>
       <div class="rail-label">WORKSPACE</div>
+      <nav class="rail-nav project-nav">
+        <a href="./index.html#/">⌂ <span>Project home</span></a>
+        <a href="./index.html#/story/new-town/map">⌁ <span>Story flow chart</span></a>
+      </nav>
+      <div class="rail-label editor-label">CHARACTER GENERATOR</div>
       <nav class="rail-nav">
         <a class="active" href="#stat-tree">◈ <span>Stat tree</span></a>
         <a href="#character-options">◇ <span>Character options</span></a>
@@ -22,7 +27,7 @@
     </aside>
 
     <main class="main">
-      <header class="topbar"><div><span class="eyebrow">DESIGN SANDBOX / CHARACTER SYSTEM</span><h1>Character Atlas</h1><p>Build an origin. Trace the effects. Find the story hiding in the numbers.</p></div><div class="top-actions"><span class="draft-pill">● UNSAVED DRAFT</span><button id="reset-button" class="quiet-button" type="button">Reset preview</button></div></header>
+      <header class="topbar"><div><span class="eyebrow">DESIGN SANDBOX / CHARACTER SYSTEM</span><h1>Character Atlas</h1><p>Build an origin. Trace the effects. Find the story hiding in the numbers.</p></div><div class="top-actions"><a class="quiet-button nav-button" href="./index.html#/">Home</a><a class="quiet-button nav-button" href="./index.html#/story/new-town/map">Story map</a><span class="draft-pill">● UNSAVED DRAFT</span><button id="reset-button" class="quiet-button" type="button">Reset preview</button></div></header>
       <div class="workspace">
         <div class="left-stack">
           <section class="panel controls" id="character-options" aria-labelledby="character-heading"><div class="panel-heading"><div><span class="section-number">01 / CHARACTER</span><h2 id="character-heading">Shape the origin</h2></div><span class="panel-icon">✧</span></div>

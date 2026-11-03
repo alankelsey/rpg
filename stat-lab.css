@@ -4,3 +4,6 @@
 .copy-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:20px;padding-top:17px;border-top:1px solid #ebede7}.copy-button{background:#2d5142;color:#fff;border:1px solid #2d5142;border-radius:6px;padding:10px 13px;font-size:11px;font-weight:700}.copy-button:hover{background:#3d6854}.copy-status{font-size:10px;line-height:1.4;color:#66806b}.preview-panel .copy-actions{margin-top:22px}@media(max-width:1350px){.preview-panel .copy-actions{grid-column:1/-1}}@media(max-width:900px){.preview-panel .copy-actions{grid-column:auto}}
 
 .image-result{margin:14px 0 0}.image-result img{display:block;width:100%;border-radius:8px;border:1px solid #ebede7}.image-result figcaption{color:#748279;font-size:11px;margin-top:6px}.image-result summary{cursor:pointer}
+
+/* Cross-workspace navigation */
+.project-nav{margin-bottom:24px;padding-bottom:19px;border-bottom:1px solid #3a4b45}.editor-label{margin-top:0}.top-actions{justify-content:flex-end;gap:10px;flex-wrap:wrap}.nav-button{text-decoration:none}@media(max-width:600px){.top-actions{display:flex}.nav-button{display:inline-block}}

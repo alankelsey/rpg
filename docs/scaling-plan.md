@@ -26,6 +26,8 @@ At about 0.5 MB per new player, 100,000 new players is roughly 50 GB. Most CDN f
 
 ## 2. Rollout stages
 
+These are audience and hosting rollout stages, not the product delivery stages in [the modernization review](modernization-review.md#practical-delivery-sequence). In particular, delivery Stage 1 remains open until its story-structure experiments are complete; rollout Stage 1 below simply means inviting friends to the deployed static game.
+
 | Stage | Who | What's live | Gate to move on |
 |---|---|---|---|
 | 0. Owner | You | Static reader, local saves, new-town story | All intended endings reachable; save/resume and story switching work; plays well on phone and keyboard. |

@@ -173,11 +173,25 @@ These are planning judgments, not estimates derived from team velocity. For one 
 
 | Stage | Deliverable | Gate before expanding |
 |---|---|---|
-| 1. Complete one adventure | One finished story, versioned schema, pure engine, stat effects/checks, explicit endings, static reader, local save/import/export. | Intended endings are demonstrably reachable; keyboard/mobile play and exact save/resume work; playtesters understand the consequences and want to continue. |
-| 2. Private author workflow | Validation feedback, preview, bounded explorer bot, attribution, versioned publishing from files or a simple form. | A second author can finish and publish a short story without changing engine code. No graph-canvas editor is required yet. |
+| 1. Playable story, engine/state contract, and structure experiments | One finished story, versioned schema, pure engine, stat effects/checks, explicit endings, static reader, local save/import/export, a completed [engine/state gate](engine-state-roadmap.md), plus working experiments for a branching map viewer/editor, passage connections, a multiple-endings tree, state inspection, and map/editor/preview navigation. | The engine/state contract is stable before additional editor UI; the experiments work against "New Town" and answer the questions below; selected and rejected approaches are recorded; intended endings are demonstrably reachable; keyboard/mobile play and exact save/resume work; playtesters understand the consequences and want to continue. |
+| 2. Private author workflow | Turn the Stage 1 findings into dependable passage and choice editing, validation feedback, preview, bounded explorer bot, attribution, and versioned publishing. | A second author can finish and publish a short story without changing engine code. The author can understand its branching, endings, and state-dependent routes using the selected Stage 1 visualization. |
 | 3. Durable accounts and publishing | Managed authentication, owner-bound saves, asynchronous store, atomic retries, backups/restore, initial moderation/removal tools. | Restart/deploy/outage/retry checks pass; ownership is enforced; real deployed login/save/resume works; permissions and consent are recorded. |
 | 4. Small community pilot | Proposals tied to exact versions, author/moderator approval, limited voting, defined read metrics. | Conflicts, duplicate votes, removal, and abuse reports have an owner and tested workflows. Submission volume fits moderation capacity. |
 | 5. Optional experiments | Director incidents, public bots, reviewed dataset exports, offline LLM drafting. | Each has a specific user/research objective, cost ceiling, measurement plan, and independent off switch. |
+
+### Stage 1 experimentation scope
+
+The playable "New Town" adventure and read-only map establish the initial foundation, but do not close Stage 1. Before adding more editor UI, complete the [engine and state roadmap](engine-state-roadmap.md) so authoring controls target a deliberate, tested rules contract. The remaining structure work is intentionally experimental: build enough to compare approaches and learn what the production author workflow needs. The source concepts come from [RPG and Choose Your Own Adventure Components.docx](RPG%20and%20Choose%20Your%20Own%20Adventure%20Components.docx).
+
+After the engine/state gate, Stage 1 experiments must cover:
+
+1. **Branching structure viewer and editor.** Render passages as nodes and choices as directed edges. Try editing passages and choices without creating a second story representation that can drift from the playable JSON.
+2. **Connecting paths to passages.** Create, reconnect, and remove a choice edge; label it with the player-facing choice; support branches that split, rejoin at bottlenecks, or end early; report missing destinations.
+3. **Visual multiple-endings tree.** Make every ending and at least one route to it inspectable. Distinguish good, neutral, and bad endings, while still representing a graph when paths reconverge instead of pretending every story is a strict tree.
+4. **State tracking.** Inspect the stats, flags, requirements, and effects on a selected path. Show why a later route is available or locked and verify that the view agrees with canonical engine replay.
+5. **Navigation.** Move between connected passages in the playable preview and move predictably among map, selected node, passage editor, and preview. Include practical map navigation such as locating a passage and following an edge to its destination.
+
+Stage 1 closes only after all five experiments run against "New Town," their limitations are written down, and a decision records what will be carried into Stage 2. The experiment can be disposable; its findings and the single-source-of-truth contract are not. A polished collaborative editor, accounts, and public publishing remain outside Stage 1.
 
 Defer payments, contribution credits, merch revenue sharing, live generated scenes, and paid inference until engagement justifies them. The plan's “no pay-to-win exists in a CYOA” is not inherently true; paid resources or influence could create it. Define the intended fairness policy before adding an economy. Do not reward voting with tradable credits before abuse and accounting rules exist.
 
@@ -203,7 +217,7 @@ Use tests that protect the contracts and observed failure boundaries:
 - **Publishing, when introduced:** approvals bind to exact content; stale proposals require renewed review; rollback/removal and backup restoration are exercised.
 - **Deployment:** check the expected revision and real auth/write/read behavior, including unavailable dependencies. A green build or generic health response is insufficient acceptance.
 
-The immediate next implementation milestone should be a complete versioned “new town” adventure with one meaningful resource tradeoff, one later consequence, multiple endings, and reliable local save/resume. That is small enough to validate the product while establishing the engine and content contracts the larger ambitions depend on.
+The complete versioned “New Town” adventure now provides the fixture for the immediate next implementation work. Complete the engine/state gate first, then continue the Stage 1 passage-connection, state-simulation, editor, and navigation experiments defined above. Finish and document those experiments before turning them into the Stage 2 author workflow.
 
 ## 9. Research addition: other players influencing your adventure
 

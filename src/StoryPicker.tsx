@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { navigate } from './router';
 import { catalog } from './stories/catalog';
 import { deleteSave, endingsFound, exportAll, importAll, lastPlayed, loadSave } from './saves';
+import { WorkspaceNav } from './WorkspaceNav';
 
 export function StoryPicker() {
   const [, refresh] = useState(0);
@@ -40,12 +41,36 @@ export function StoryPicker() {
   };
 
   return (
-    <main className="page">
-      <header className="masthead">
-        <p className="eyebrow">A choose-your-own-adventure RPG</p>
-        <h1>Pick a story</h1>
-        <p className="lede">Every choice is weighed against who you are. Some paths only open on another try.</p>
+    <main className="page landing-page">
+      <WorkspaceNav active="home" />
+      <header className="masthead landing-masthead">
+        <p className="eyebrow">Choose-your-own-adventure workshop</p>
+        <h1>Build the character.<br />See every path.</h1>
+        <p className="lede">Move between the character generator, the live story flow chart, and the playable adventure from one workspace.</p>
       </header>
+
+      <section className="workbench" aria-labelledby="workbench-heading">
+        <div className="section-heading">
+          <p className="eyebrow">Stage 1 experiments</p>
+          <h2 id="workbench-heading">Workshop tools</h2>
+        </div>
+        <div className="tool-grid">
+          <a className="tool-card character-tool" href="./stat-lab.html">
+            <span className="tool-number">01</span>
+            <span className="tool-icon" aria-hidden="true">✦</span>
+            <strong>Character Generator</strong>
+            <span>Build an origin, tune stats, and generate a reusable character card.</span>
+            <em>Open character workshop →</em>
+          </a>
+          <a className="tool-card map-tool" href="#/story/new-town/map">
+            <span className="tool-number">02</span>
+            <span className="tool-icon" aria-hidden="true">⌁</span>
+            <strong>Story Flow Chart</strong>
+            <span>Inspect all 21 passages, choice connections, state rules, and four endings.</span>
+            <em>Open branching viewer →</em>
+          </a>
+        </div>
+      </section>
 
       {resume && resumeEntry && (
         <section className="continue" aria-labelledby="continue-heading">
@@ -59,6 +84,11 @@ export function StoryPicker() {
         </section>
       )}
 
+      <section className="play-library" aria-labelledby="stories-heading">
+        <div className="section-heading">
+          <p className="eyebrow">Playable build</p>
+          <h2 id="stories-heading">Stories</h2>
+        </div>
       <ul className="story-list">
         {catalog.map((entry) => {
           const save = loadSave(entry.id);
@@ -76,6 +106,9 @@ export function StoryPicker() {
                 <button className="primary" type="button" onClick={() => navigate(`#/story/${entry.id}`)}>
                   {inProgress ? 'Continue' : 'Start'}
                 </button>
+                <button type="button" onClick={() => navigate(`#/story/${entry.id}/map`)}>
+                  View story map
+                </button>
                 {inProgress && (
                   <button type="button" onClick={() => startOver(entry.id)}>
                     {confirming === entry.id ? 'Tap again to erase progress' : 'Start over'}
@@ -86,6 +119,7 @@ export function StoryPicker() {
           );
         })}
       </ul>
+      </section>
 
       <section className="saves" aria-labelledby="saves-heading">
         <h2 id="saves-heading">Your saves</h2>
@@ -109,6 +143,26 @@ export function StoryPicker() {
           {status}
         </p>
       </section>
+
+      <footer className="landing-footer">
+        <div>
+          <p className="eyebrow">Documentation</p>
+          <h2>Build on the story engine</h2>
+          <p>Read the project overview or browse the engine functions and story contracts.</p>
+        </div>
+        <nav aria-label="Documentation links">
+          <a href="https://github.com/alankelsey/rpg#readme" target="_blank" rel="noreferrer">
+            <span aria-hidden="true">↗</span>
+            <strong>GitHub README</strong>
+            <small>Project setup and roadmap</small>
+          </a>
+          <a href="#/docs">
+            <span aria-hidden="true">{'{}'}</span>
+            <strong>API Reference</strong>
+            <small>Engine operations and schemas</small>
+          </a>
+        </nav>
+      </footer>
     </main>
   );
 }

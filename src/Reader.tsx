@@ -102,6 +102,7 @@ function Playthrough({ story, initialRun, notice }: { story: Story; initialRun?:
       <nav className="reader-nav">
         <button type="button" className="link" onClick={() => navigate('#/')}>← Stories</button>
         <span className="reader-title">{story.title}</span>
+        <button type="button" className="link" onClick={() => navigate(`#/story/${story.id}/map`)}>Story map</button>
       </nav>
       <StatsPanel story={story} run={run} previous={previous} />
       <article className="scene" aria-live="off">
@@ -130,6 +131,7 @@ function StartScreen({ story, notice, onBegin }: { story: Story; notice?: string
     <main className="page">
       <nav className="reader-nav">
         <button type="button" className="link" onClick={() => navigate('#/')}>← Stories</button>
+        <button type="button" className="link" onClick={() => navigate(`#/story/${story.id}/map`)}>Story map</button>
       </nav>
       <h1>{story.title}</h1>
       <p className="lede">{story.summary}</p>

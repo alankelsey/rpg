@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { StoryPicker } from './StoryPicker';
 import { Reader } from './Reader';
+import { StoryMap } from './StoryMap';
+import { ApiDocs } from './ApiDocs';
 import { currentRoute } from './router';
 
 export function App() {
@@ -12,5 +14,8 @@ export function App() {
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
-  return route.storyId ? <Reader key={route.storyId} storyId={route.storyId} /> : <StoryPicker />;
+  if (route.storyId && route.view === 'map') return <StoryMap key={`map/${route.storyId}`} storyId={route.storyId} />;
+  if (route.storyId && route.view === 'reader') return <Reader key={route.storyId} storyId={route.storyId} />;
+  if (route.view === 'docs') return <ApiDocs />;
+  return <StoryPicker />;
 }
