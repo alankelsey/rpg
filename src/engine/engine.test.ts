@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { IllegalChoiceError, applyChoice, checkCondition, choiceViews, explore, lockedChoicesSeen, lockedReason, replay, sceneText, startRun, transition } from './engine';
+import { IllegalChoiceError, applyChoice, checkCondition, choiceViews, explore, lockedChoicesSeen, lockedReason, replay, sceneText, simulateRoute, startRun, transition } from './engine';
 import { testStory as story } from './test-story';
 
 describe('startRun', () => {
@@ -107,6 +107,17 @@ describe('replay', () => {
     expect(replay(story, 'Mara', history)).toEqual(replay(story, 'Mara', history));
     expect(replay(story, 'Mara', history).stats).toMatchObject({ money: 1407, kindness: 10 });
   });
+
+  it('exposes each canonical transition for state-aware maps and previews', () => {
+    const route = simulateRoute(story, 'Mara', ['store', 'mnms']);
+    expect(route.initial).toMatchObject({ sceneId: 'curb', revision: 0 });
+    expect(route.steps.map((step) => ({ choice: step.choiceId, from: step.fromSceneId, to: step.result.state.sceneId }))).toEqual([
+      { choice: 'store', from: 'curb', to: 'store' },
+      { choice: 'mnms', from: 'store', to: 'curb' },
+    ]);
+    expect(route.steps[1]?.result.events).toContainEqual({ type: 'stat', stat: 'money', before: 1500, after: 1497, delta: -3 });
+    expect(route.final).toEqual(replay(story, 'Mara', ['store', 'mnms']));
+  });
 });
 
 describe('locked choices', () => {
@@ -139,5 +150,17 @@ describe('explore', () => {
     const report = explore(story, 500);
     expect(report.truncated).toBe(true);
     expect(report.statesVisited).toBe(500);
+  });
+
+  it('reports a transition that returns to an already explored state', () => {
+    const loop = structuredClone(story);
+    loop.scenes = {
+      start: { text: 'Loop.', choices: [{ id: 'again', label: 'Again', to: 'start' }, { id: 'done', label: 'Done', to: 'done' }] },
+      done: { text: 'Done.', ending: { id: 'done', title: 'Done', tone: 'neutral' } },
+    };
+    loop.start = 'start';
+    const report = explore(loop, 10);
+    expect(report.cycles).toEqual([{ sceneId: 'start', choiceId: 'again', history: ['again'] }]);
+    expect(report.truncated).toBe(false);
   });
 });

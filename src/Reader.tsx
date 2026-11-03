@@ -17,7 +17,7 @@ import {
   type TransitionEvent,
 } from './engine';
 import { findStory } from './stories/catalog';
-import { deleteSave, endingsFound, lastName, loadSave, recordEnding, writeSave } from './saves';
+import { endingsFound, lastName, loadSave, recordEnding, writeSave } from './saves';
 
 type Load =
   | { kind: 'loading' }
@@ -65,8 +65,10 @@ function resume(story: Story): { story: Story; run?: RunState; notice?: string }
       // Fall through to the notice below.
     }
   }
-  deleteSave(story.id);
-  return { story, notice: 'This story was updated since your last visit, so your old save no longer fits. Start a new run.' };
+  return {
+    story,
+    notice: 'This save needs a different story or rules version. It has been preserved for export, but it cannot resume here. Starting a new run will replace it.',
+  };
 }
 
 function Playthrough({ story, initialRun, notice }: { story: Story; initialRun?: RunState; notice?: string }) {

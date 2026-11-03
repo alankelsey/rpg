@@ -13,6 +13,9 @@
     "kindness": { "label": "Kindness", "initial": 0, "min": 0, "max": 100 },
     "junkMeals": { "label": "Junk meals", "initial": 0, "min": 0, "hidden": true }
   },
+  "items": {
+    "route9Flyer": { "label": "Route 9 day-labor flyer", "max": 1 }
+  },
   "scenes": {
     "curb": {
       "title": "Day 1 · The Curb",
@@ -50,9 +53,9 @@
     },
     "officeLate": {
       "title": "Day 1 · Closing Time",
-      "text": "A clerk is pulling down the blinds as you walk in. \"We open at eight,\" she says, not unkindly. \"Board's full this week. Come early.\"\n\nShe hands you a flyer and locks the door behind you.",
+      "text": "A clerk is pulling down the blinds as you walk in. \"We open at eight,\" she says, not unkindly. \"Board's full this week. Come early.\"\n\nShe hands you a flyer for day-labor intake at a warehouse on Route 9, then locks the door behind you.",
       "choices": [
-        { "id": "sleep", "label": "Find somewhere to sleep", "to": "hotelFront" }
+        { "id": "sleep", "label": "Take the flyer and find somewhere to sleep", "to": "hotelFront", "effects": { "inventory": { "route9Flyer": 1 } } }
       ]
     },
     "hotelFront": {
@@ -97,8 +100,8 @@
           "id": "daylabor",
           "label": "Day labor at the Route 9 warehouse (cash)",
           "to": "jobDayLabor",
-          "requires": [{ "flag": "heardWarehouse", "is": true }],
-          "lockedHint": "It isn't on the board. Someone would have to tell you about it."
+          "requires": [{ "any": [{ "flag": "heardWarehouse", "is": true }, { "item": "route9Flyer", "gte": 1 }] }],
+          "lockedHint": "It isn't on the board. You need Dev's referral or the Route 9 intake flyer."
         },
         {
           "id": "frontdesk",

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { catalog } from './catalog';
-import { endingsOf, explore, validateStory } from '../engine';
+import { choiceViews, endingsOf, explore, replay, validateStory } from '../engine';
 
 describe.each(catalog)('story $id', (entry) => {
   it('matches its catalog entry', async () => {
@@ -23,5 +23,18 @@ describe.each(catalog)('story $id', (entry) => {
     expect(report.stuck).toEqual([]);
     expect(report.neverAvailable).toEqual([]);
     expect([...report.endings.keys()].sort()).toEqual(endingsOf(story).map((e) => e.ending.id).sort());
+  });
+});
+
+describe('New Town state mechanics', () => {
+  it('uses inventory and composed requirements through the canonical engine', async () => {
+    const story = await catalog.find((entry) => entry.id === 'new-town')!.load();
+    const withFlyer = replay(story, 'Mara', ['office', 'sleep', 'hostel', 'sleep', 'skip']);
+    expect(withFlyer.inventory.route9Flyer).toBe(1);
+    expect(choiceViews(story, withFlyer).find((view) => view.choice.id === 'daylabor')?.available).toBe(true);
+
+    const withoutFlyer = replay(story, 'Mara', ['hotel', 'hostel', 'sleep', 'skip']);
+    expect(withoutFlyer.inventory.route9Flyer).toBe(0);
+    expect(choiceViews(story, withoutFlyer).find((view) => view.choice.id === 'daylabor')?.available).toBe(false);
   });
 });

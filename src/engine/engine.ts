@@ -108,7 +108,33 @@ export function applyChoice(story: Story, state: RunState, choiceId: string): Ru
 
 /** Rebuild a run from its choice history. Used for save verification and bots. */
 export function replay(story: Story, playerName: string, history: readonly string[]): RunState {
-  return history.reduce((state, choiceId) => applyChoice(story, state, choiceId), startRun(story, playerName));
+  return simulateRoute(story, playerName, history).final;
+}
+
+export interface RouteStep {
+  choiceId: string;
+  fromSceneId: string;
+  result: TransitionResult;
+}
+
+export interface RouteSimulation {
+  initial: RunState;
+  steps: RouteStep[];
+  final: RunState;
+}
+
+/** Replays a route and keeps every canonical transition for maps, previews, tests, and bots. */
+export function simulateRoute(story: Story, playerName: string, history: readonly string[]): RouteSimulation {
+  const initial = startRun(story, playerName);
+  const steps: RouteStep[] = [];
+  let state = initial;
+  for (const choiceId of history) {
+    const fromSceneId = state.sceneId;
+    const result = transition(story, state, choiceId);
+    steps.push({ choiceId, fromSceneId, result });
+    state = result.state;
+  }
+  return { initial, steps, final: state };
 }
 
 export function formatStat(story: Story, stat: string, value: number): string {
@@ -182,6 +208,8 @@ export interface ExploreReport {
   stuck: { sceneId: string; history: string[] }[];
   /** `sceneId/choiceId` for choices that were never available in any explored state. */
   neverAvailable: string[];
+  /** Transitions that return to a gameplay state already explored. */
+  cycles: { sceneId: string; choiceId: string; history: string[] }[];
   statesVisited: number;
   /** True when maxStates was hit before every state was explored. */
   truncated: boolean;
@@ -193,12 +221,14 @@ export function explore(story: Story, maxStates = 20000): ExploreReport {
   const stuck: ExploreReport['stuck'] = [];
   const everAvailable = new Set<string>();
   const visited = new Set<string>();
+  const cycles: ExploreReport['cycles'] = [];
+  const cycleKeys = new Set<string>();
   const stack = [startRun(story, 'Explorer')];
   let truncated = false;
 
   while (stack.length > 0) {
     const state = stack.pop()!;
-    const key = JSON.stringify([state.sceneId, state.stats, state.flags, state.inventory]);
+    const key = explorationKey(state);
     if (visited.has(key)) continue;
     if (visited.size >= maxStates) {
       truncated = true;
@@ -215,14 +245,28 @@ export function explore(story: Story, maxStates = 20000): ExploreReport {
     if (open.length === 0) stuck.push({ sceneId: state.sceneId, history: state.history });
     for (const view of open) {
       everAvailable.add(`${state.sceneId}/${view.choice.id}`);
-      stack.push(applyChoice(story, state, view.choice.id));
+      const next = applyChoice(story, state, view.choice.id);
+      const nextKey = explorationKey(next);
+      if (visited.has(nextKey)) {
+        const cycleKey = `${state.sceneId}/${view.choice.id}/${nextKey}`;
+        if (!cycleKeys.has(cycleKey)) {
+          cycleKeys.add(cycleKey);
+          cycles.push({ sceneId: state.sceneId, choiceId: view.choice.id, history: next.history });
+        }
+      } else {
+        stack.push(next);
+      }
     }
   }
 
   const neverAvailable = Object.entries(story.scenes).flatMap(([sceneId, scene]) =>
     (scene.choices ?? []).map((c) => `${sceneId}/${c.id}`).filter((id) => !everAvailable.has(id)),
   );
-  return { endings, stuck, neverAvailable, statesVisited: visited.size, truncated };
+  return { endings, stuck, neverAvailable, cycles, statesVisited: visited.size, truncated };
+}
+
+function explorationKey(state: RunState): string {
+  return JSON.stringify([state.sceneId, state.stats, state.flags, state.inventory]);
 }
 
 function applyEffects(story: Story, state: RunState, choice: Choice): { state: RunState; events: TransitionEvent[] } {
