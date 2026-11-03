@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { navigate } from './router';
 import {
-  applyChoice,
   choiceViews,
   endingsOf,
   formatStat,
@@ -11,9 +10,11 @@ import {
   replay,
   sceneText,
   startRun,
+  transition,
   validateStory,
   type RunState,
   type Story,
+  type TransitionEvent,
 } from './engine';
 import { findStory } from './stories/catalog';
 import { deleteSave, endingsFound, lastName, loadSave, recordEnding, writeSave } from './saves';
@@ -55,9 +56,11 @@ export function Reader({ storyId }: { storyId: string }) {
 function resume(story: Story): { story: Story; run?: RunState; notice?: string } {
   const save = loadSave(story.id);
   if (!save || save.ended) return { story };
-  if (save.storyVersion === story.version) {
+  if (save.storyVersion === story.version && save.rulesVersion === story.rulesVersion) {
     try {
-      return { story, run: replay(story, save.playerName, save.history) };
+      const run = replay(story, save.playerName, save.history);
+      if (run.revision !== save.revision) throw new Error('Save revision does not match history');
+      return { story, run };
     } catch {
       // Fall through to the notice below.
     }
@@ -68,24 +71,24 @@ function resume(story: Story): { story: Story; run?: RunState; notice?: string }
 
 function Playthrough({ story, initialRun, notice }: { story: Story; initialRun?: RunState; notice?: string }) {
   const [run, setRun] = useState(initialRun);
-  const [previous, setPrevious] = useState<RunState>();
+  const [events, setEvents] = useState<TransitionEvent[]>([]);
   const [saveFailed, setSaveFailed] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
 
   const begin = (name: string) => {
     const state = startRun(story, name);
-    setPrevious(undefined);
+    setEvents([]);
     setRun(state);
     setSaveFailed(!writeSave(story, state));
   };
 
   const choose = (choiceId: string) => {
     if (!run) return;
-    const next = applyChoice(story, run, choiceId);
-    setPrevious(run);
-    setRun(next);
-    setSaveFailed(!writeSave(story, next));
-    const ending = getScene(story, next.sceneId).ending;
+    const result = transition(story, run, choiceId);
+    setEvents(result.events);
+    setRun(result.state);
+    setSaveFailed(!writeSave(story, result.state));
+    const ending = getScene(story, result.state.sceneId).ending;
     if (ending) recordEnding(story.id, ending.id);
   };
 
@@ -104,7 +107,7 @@ function Playthrough({ story, initialRun, notice }: { story: Story; initialRun?:
         <span className="reader-title">{story.title}</span>
         <button type="button" className="link" onClick={() => navigate(`#/story/${story.id}/map`)}>Story map</button>
       </nav>
-      <StatsPanel story={story} run={run} previous={previous} />
+      <StatsPanel story={story} run={run} events={events} />
       <article className="scene" aria-live="off">
         <h1 ref={heading} tabIndex={-1}>{scene.title}</h1>
         {sceneText(story, run).split('\n\n').map((paragraph, i) => (
@@ -145,14 +148,16 @@ function StartScreen({ story, notice, onBegin }: { story: Story; notice?: string
   );
 }
 
-function StatsPanel({ story, run, previous }: { story: Story; run: RunState; previous?: RunState }) {
+function StatsPanel({ story, run, events }: { story: Story; run: RunState; events: TransitionEvent[] }) {
   const visible = Object.entries(story.stats).filter(([, def]) => !def.hidden);
   return (
     <section className="stats" aria-label="Your stats">
       <ul>
         {visible.map(([key, def]) => {
           const value = run.stats[key] ?? 0;
-          const delta = previous ? value - (previous.stats[key] ?? 0) : 0;
+          const delta = events
+            .filter((event): event is Extract<TransitionEvent, { type: 'stat' }> => event.type === 'stat' && event.stat === key)
+            .reduce((total, event) => total + event.delta, 0);
           return (
             <li key={key}>
               <span className="stat-label">{def.label}</span>

@@ -42,6 +42,23 @@ describe('validateStory', () => {
     );
   });
 
+  it('validates schema versions, inventory, and composed conditions', () => {
+    const story = edit((s) => {
+      Object.assign(s, { schemaVersion: 2 });
+      s.scenes.curb!.choices![0]!.requires = [{ all: [] }, { item: 'missing', gte: 1 }];
+      s.scenes.curb!.choices![0]!.effects = { inventory: { missing: 1.5 } };
+    });
+    expect(messages(story)).toEqual(
+      expect.arrayContaining([
+        'error: schemaVersion: Only story schema version 1 is supported',
+        'error: scenes.curb.choices.store.requires[0]: Condition group cannot be empty',
+        'error: scenes.curb.choices.store.requires[1]: Requires unknown item "missing"',
+        'error: scenes.curb.choices.store: Changes unknown item "missing"',
+        'error: scenes.curb.choices.store: Item change for "missing" must be an integer',
+      ]),
+    );
+  });
+
   it('reports dead ends and endings with choices', () => {
     const story = edit((s) => {
       delete s.scenes.hostel!.ending;

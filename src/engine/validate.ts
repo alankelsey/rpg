@@ -22,19 +22,50 @@ export function validateStory(story: Story): Issue[] {
   const setFlags = new Set<string>();
   const readFlags: { flag: string; at: string }[] = [];
 
+  if (story.schemaVersion !== 1) error('schemaVersion', 'Only story schema version 1 is supported');
+  if (story.rulesVersion !== 1) error('rulesVersion', 'Only rules version 1 is supported');
   if (!Number.isInteger(story.version) || story.version < 1) error('version', 'Version must be a positive integer');
   if (!sceneIds.has(story.start)) error('start', `Start scene "${story.start}" does not exist`);
 
   for (const [key, def] of Object.entries(story.stats)) {
+    if (!Number.isFinite(def.initial)) error(`stats.${key}.initial`, 'Initial value must be finite');
     if (def.min !== undefined && def.max !== undefined && def.min > def.max) {
       error(`stats.${key}`, 'min is greater than max');
     }
   }
 
+  for (const [key, def] of Object.entries(story.items ?? {})) {
+    if (!Number.isInteger(def.initial ?? 0) || (def.initial ?? 0) < 0) {
+      error(`items.${key}.initial`, 'Initial quantity must be a non-negative integer');
+    }
+    if (def.max !== undefined && (!Number.isInteger(def.max) || def.max < 0 || def.max < (def.initial ?? 0))) {
+      error(`items.${key}.max`, 'Maximum quantity must be an integer at least as large as the initial quantity');
+    }
+  }
+
   const checkCondition = (c: Condition, at: string) => {
-    if ('flag' in c) readFlags.push({ flag: c.flag, at });
-    else if (!(c.stat in story.stats)) error(at, `Requires unknown stat "${c.stat}"`);
-    else if (c.gte === undefined && c.lte === undefined) error(at, `Condition on "${c.stat}" has no gte or lte`);
+    if ('flag' in c) {
+      readFlags.push({ flag: c.flag, at });
+      return;
+    }
+    if ('all' in c || 'any' in c) {
+      const children = 'all' in c ? c.all : c.any;
+      if (children.length === 0) error(at, 'Condition group cannot be empty');
+      children.forEach((child, i) => checkCondition(child, `${at}.${'all' in c ? 'all' : 'any'}[${i}]`));
+      return;
+    }
+    if ('not' in c) {
+      checkCondition(c.not, `${at}.not`);
+      return;
+    }
+    const key = 'stat' in c ? c.stat : c.item;
+    const kind = 'stat' in c ? 'stat' : 'item';
+    const definitions = kind === 'stat' ? story.stats : (story.items ?? {});
+    if (!(key in definitions)) error(at, `Requires unknown ${kind} "${key}"`);
+    if (c.gte === undefined && c.lte === undefined) error(at, `Condition on "${key}" has no gte or lte`);
+    if (c.gte !== undefined && !Number.isFinite(c.gte)) error(at, 'gte must be finite');
+    if (c.lte !== undefined && !Number.isFinite(c.lte)) error(at, 'lte must be finite');
+    if (c.gte !== undefined && c.lte !== undefined && c.gte > c.lte) error(at, 'gte cannot be greater than lte');
   };
 
   for (const [sceneId, scene] of Object.entries(story.scenes)) {
@@ -53,8 +84,15 @@ export function validateStory(story: Story): Issue[] {
       for (const key of Object.keys(choice.effects?.stats ?? {})) {
         if (!(key in story.stats)) error(cAt, `Changes unknown stat "${key}"`);
       }
+      for (const [key, delta] of Object.entries(choice.effects?.stats ?? {})) {
+        if (!Number.isFinite(delta)) error(cAt, `Stat change for "${key}" must be finite`);
+      }
+      for (const [key, delta] of Object.entries(choice.effects?.inventory ?? {})) {
+        if (!(key in (story.items ?? {}))) error(cAt, `Changes unknown item "${key}"`);
+        if (!Number.isInteger(delta)) error(cAt, `Item change for "${key}" must be an integer`);
+      }
       for (const flag of Object.keys(choice.effects?.flags ?? {})) setFlags.add(flag);
-      const vague = choice.requires?.some((c) => 'flag' in c || story.stats[c.stat]?.hidden);
+      const vague = choice.requires?.some((c) => conditionNeedsHint(story, c));
       if (vague && !choice.hideWhenLocked && !choice.lockedHint) {
         warn(cAt, 'Shown when locked but depends on a flag or hidden stat; add a lockedHint');
       }
@@ -75,6 +113,12 @@ export function validateStory(story: Story): Issue[] {
   }
 
   return issues;
+}
+
+function conditionNeedsHint(story: Story, condition: Condition): boolean {
+  if ('stat' in condition) return Boolean(story.stats[condition.stat]?.hidden);
+  if ('item' in condition || 'flag' in condition || 'not' in condition) return true;
+  return ('all' in condition ? condition.all : condition.any).some((child) => conditionNeedsHint(story, child));
 }
 
 /** Scenes reachable by following choices from the start, ignoring requirements. */

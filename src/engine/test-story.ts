@@ -2,6 +2,8 @@ import type { Story } from './types';
 
 // Small fixture for engine tests, loosely based on the new-town opening. Not the real story.
 export const testStory: Story = {
+  schemaVersion: 1,
+  rulesVersion: 1,
   id: 'test-town',
   version: 1,
   title: 'Test Town',
@@ -13,6 +15,9 @@ export const testStory: Story = {
     energy: { label: 'Energy', initial: 50, min: 0, max: 100 },
     kindness: { label: 'Kindness', initial: 0, min: 0, max: 100 },
     junkMeals: { label: 'Junk meals', initial: 0, min: 0, hidden: true },
+  },
+  items: {
+    key: { label: 'Brass key' },
   },
   scenes: {
     curb: {

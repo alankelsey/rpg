@@ -203,10 +203,17 @@ function Rule({ label, value }: { label: string; value: string }) {
 
 function describeCondition(story: Story, condition: Condition): string {
   if ('flag' in condition) return `${humanize(condition.flag)} is ${condition.is ? 'set' : 'not set'}`;
-  const label = story.stats[condition.stat]?.label ?? humanize(condition.stat);
+  if ('all' in condition) return `all of (${condition.all.map((child) => describeCondition(story, child)).join('; ')})`;
+  if ('any' in condition) return `any of (${condition.any.map((child) => describeCondition(story, child)).join('; ')})`;
+  if ('not' in condition) return `not (${describeCondition(story, condition.not)})`;
+  const key = 'stat' in condition ? condition.stat : condition.item;
+  const label = 'stat' in condition
+    ? (story.stats[key]?.label ?? humanize(key))
+    : (story.items?.[key]?.label ?? humanize(key));
+  const value = (amount: number) => ('stat' in condition ? formatStat(story, key, amount) : String(amount));
   const requirements = [
-    condition.gte === undefined ? '' : `${label} ≥ ${formatStat(story, condition.stat, condition.gte)}`,
-    condition.lte === undefined ? '' : `${label} ≤ ${formatStat(story, condition.stat, condition.lte)}`,
+    condition.gte === undefined ? '' : `${label} ≥ ${value(condition.gte)}`,
+    condition.lte === undefined ? '' : `${label} ≤ ${value(condition.lte)}`,
   ].filter(Boolean);
   return requirements.join(' and ');
 }
@@ -217,7 +224,11 @@ function describeEffects(story: Story, choice: Choice): string {
     return `${label} ${delta >= 0 ? '+' : '−'}${formatStat(story, stat, Math.abs(delta))}`;
   });
   const flags = Object.entries(choice.effects?.flags ?? {}).map(([flag, value]) => `${humanize(flag)} = ${value ? 'yes' : 'no'}`);
-  return [...stats, ...flags].join(' · ');
+  const inventory = Object.entries(choice.effects?.inventory ?? {}).map(([item, delta]) => {
+    const label = story.items?.[item]?.label ?? humanize(item);
+    return `${label} ${delta >= 0 ? '+' : '−'}${Math.abs(delta)}`;
+  });
+  return [...stats, ...flags, ...inventory].join(' · ');
 }
 
 function humanize(value: string): string {

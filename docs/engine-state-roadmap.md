@@ -2,6 +2,22 @@
 
 Status: next implementation priority. Complete this gate before investing in more passage-editor UI.
 
+## Progress
+
+The first contract slice was implemented on 2026-11-02:
+
+- Story, rules, run-state, and save-format versions are explicit.
+- Runs include a monotonic revision and deterministic inventory state.
+- Conditions support stats, flags, inventory quantities, and nested `all`/`any`/`not` composition.
+- Effects support bounded stat deltas, flag assignment, and validated inventory deltas.
+- The canonical transition returns immutable state plus structured stat, flag, inventory, scene, and ending events. `applyChoice` remains a compatibility wrapper.
+- Save/import validation checks every persisted field, revision/history consistency, supported versions, and endings. Existing unversioned local saves are migrated from their history.
+- Exploration state identity includes inventory, and the story map renders the expanded condition/effect language.
+
+Current ID decision: scene IDs are unique within a story; choice IDs are unique within a scene. A choice event is resolved sequentially from the current scene, so the stable reference is the `(sceneId, choiceId)` pair even though compact saves store the ordered choice IDs. Published story versions are immutable, which makes the compact history unambiguous during replay. Revisit the serialized history shape before external APIs or datasets need independently addressable events.
+
+Remaining gate work includes authored fixtures that exercise inventory and composed rules through validation, replay, exploration, and the real story catalog; route simulation for the map; clearer intentional-cycle diagnostics; save behavior when a pinned story version is unavailable; and explicit compatibility/migration fixtures for the next format change.
+
 The playable reader and read-only story map prove that the current JSON can drive both play and visualization. The next risk is the contract beneath those screens. Editing tools should not hard-code today's narrow state model and then require a rewrite when inventory, richer requirements, chapters, mini-games, or external influence are added.
 
 This work should extend the engine only for mechanics with a near-term story or authoring use. It should define stable extension points for later ideas without implementing the full community, LLM, or multiplayer roadmap.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { IllegalChoiceError, applyChoice, choiceViews, explore, lockedChoicesSeen, lockedReason, replay, sceneText, startRun } from './engine';
+import { IllegalChoiceError, applyChoice, checkCondition, choiceViews, explore, lockedChoicesSeen, lockedReason, replay, sceneText, startRun, transition } from './engine';
 import { testStory as story } from './test-story';
 
 describe('startRun', () => {
@@ -7,6 +7,7 @@ describe('startRun', () => {
     const run = startRun(story, '  Mara ');
     expect(run).toMatchObject({ sceneId: 'curb', playerName: 'Mara', ended: false, history: [] });
     expect(run.stats).toEqual({ money: 1500, health: 100, energy: 50, kindness: 0, junkMeals: 0 });
+    expect(run).toMatchObject({ schemaVersion: 1, rulesVersion: 1, revision: 0, inventory: { key: 0 } });
   });
 
   it('fills {name} in scene text', () => {
@@ -21,6 +22,7 @@ describe('applyChoice', () => {
     expect(fed.sceneId).toBe('curb');
     expect(fed.stats).toMatchObject({ money: 1497, energy: 65, junkMeals: 1 });
     expect(fed.history).toEqual(['store', 'mnms']);
+    expect(fed.revision).toBe(2);
   });
 
   it('does not modify the state it was given', () => {
@@ -64,6 +66,38 @@ describe('applyChoice', () => {
   it('rejects a run saved against a different story version', () => {
     const run = { ...startRun(story, 'Mara'), storyVersion: 99 };
     expect(() => applyChoice(story, run, 'store')).toThrow(/v99/);
+  });
+
+  it('returns structured events for every gameplay change', () => {
+    const changed = structuredClone(story);
+    changed.scenes.curb!.choices![0]!.effects = {
+      stats: { money: -10 },
+      flags: { visitedStore: true },
+      inventory: { key: 1 },
+    };
+    const result = transition(changed, startRun(changed, 'Mara'), 'store');
+    expect(result.state).toMatchObject({ revision: 1, sceneId: 'store', inventory: { key: 1 } });
+    expect(result.events).toEqual([
+      { type: 'stat', stat: 'money', before: 1500, after: 1490, delta: -10 },
+      { type: 'flag', flag: 'visitedStore', before: false, after: true },
+      { type: 'inventory', item: 'key', before: 0, after: 1, delta: 1 },
+      { type: 'scene', from: 'curb', to: 'store' },
+    ]);
+  });
+
+  it('rejects an effect that would spend unavailable inventory', () => {
+    const changed = structuredClone(story);
+    changed.scenes.curb!.choices![0]!.effects = { inventory: { key: -1 } };
+    expect(() => transition(changed, startRun(changed, 'Mara'), 'store')).toThrow(/negative/);
+  });
+});
+
+describe('conditions', () => {
+  it('supports inventory and composed all/any/not requirements', () => {
+    const run = { ...startRun(story, 'Mara'), inventory: { key: 1 }, flags: { met: true } };
+    expect(checkCondition({ item: 'key', gte: 1 }, run)).toBe(true);
+    expect(checkCondition({ all: [{ flag: 'met', is: true }, { not: { stat: 'energy', lte: 10 } }] }, run)).toBe(true);
+    expect(checkCondition({ any: [{ item: 'key', gte: 2 }, { stat: 'money', gte: 1000 }] }, run)).toBe(true);
   });
 });
 

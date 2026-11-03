@@ -13,15 +13,30 @@ export interface StatDef {
   format?: 'money';
 }
 
-/** A deterministic check. All listed comparisons must hold. */
-export type Condition =
+export interface ItemDef {
+  label: string;
+  initial?: number;
+  max?: number;
+}
+
+export type ValueCondition =
   | { stat: string; gte?: number; lte?: number }
-  | { flag: string; is: boolean };
+  | { item: string; gte?: number; lte?: number };
+
+/** A deterministic, declarative check. */
+export type Condition =
+  | ValueCondition
+  | { flag: string; is: boolean }
+  | { all: Condition[] }
+  | { any: Condition[] }
+  | { not: Condition };
 
 export interface Effects {
   /** Added to the current value, then clamped. */
   stats?: Record<string, number>;
   flags?: Record<string, boolean>;
+  /** Added to the current quantity. Item quantities are non-negative integers. */
+  inventory?: Record<string, number>;
 }
 
 export interface Choice {
@@ -55,27 +70,47 @@ export interface Scene {
 }
 
 export interface Story {
+  schemaVersion: 1;
+  rulesVersion: 1;
   id: string;
   version: number;
   title: string;
   summary: string;
   start: string;
   stats: Record<string, StatDef>;
+  items?: Record<string, ItemDef>;
   /** Flags start false unless listed here. */
   flags?: Record<string, boolean>;
   scenes: Record<string, Scene>;
 }
 
 export interface RunState {
+  schemaVersion: 1;
+  rulesVersion: 1;
   storyId: string;
   storyVersion: number;
   playerName: string;
   sceneId: string;
   stats: Record<string, number>;
   flags: Record<string, boolean>;
+  inventory: Record<string, number>;
+  /** Increases exactly once for every accepted choice. */
+  revision: number;
   /** Accepted choice ids, in order. Replaying them from the start reproduces this state. */
   history: string[];
   ended: boolean;
+}
+
+export type TransitionEvent =
+  | { type: 'stat'; stat: string; before: number; after: number; delta: number }
+  | { type: 'flag'; flag: string; before: boolean; after: boolean }
+  | { type: 'inventory'; item: string; before: number; after: number; delta: number }
+  | { type: 'scene'; from: string; to: string }
+  | { type: 'ending'; endingId: string };
+
+export interface TransitionResult {
+  state: RunState;
+  events: TransitionEvent[];
 }
 
 export interface ChoiceView {
