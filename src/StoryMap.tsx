@@ -4,6 +4,7 @@ import { navigate } from './router';
 import { MAP_NODE_HEIGHT, MAP_NODE_WIDTH, layoutStory } from './story-map/layout';
 import { downloadStoryDraft, loadStoryDraft, readStoryDraftFile, saveStoryDraft } from './story-map/draft-store';
 import { ChoiceRulesEditor } from './story-map/ChoiceRulesEditor';
+import { DefinitionsEditor } from './story-map/DefinitionsEditor';
 import { findStory } from './stories/catalog';
 import { WorkspaceNav } from './WorkspaceNav';
 
@@ -339,6 +340,7 @@ function DraftEditor({ story, sceneId, issues, status, onSceneSelect, onChange, 
           {!scene.ending && (scene.choices?.length ?? 0) === 0 && <p>Add at least one choice or mark this as an ending.</p>}
         </div>
       </div>
+      <DefinitionsEditor story={story} onChange={changeDraft} />
       <div className="draft-issues" aria-live="polite"><h3>Validation</h3>{issues.length === 0 ? <p>Draft is valid.</p> : <ul>{issues.map((issue, index) => <li key={`${issue.at}/${index}`} className={`draft-issue-${issue.level}`}><strong>{issue.level}</strong> {issue.at}: {issue.message}</li>)}</ul>}</div>
       <section className="draft-explorer" aria-labelledby="draft-explorer-heading"><div><h3 id="draft-explorer-heading">Path explorer</h3><button type="button" disabled={errors.length > 0} onClick={() => setDiagnostics(explore(story, 5000))}>Explore valid draft</button></div><p>Runs a bounded engine search from the opening. This supplements human playtesting.</p>{diagnostics && <ExplorerReport story={story} report={diagnostics} onTrace={onTrace} />}</section>
     </section>
