@@ -9,6 +9,7 @@ Status: local single-author draft controls, not a publishing workflow. This exte
 - Authors can define initial flags. The flag is then available in condition and effect controls.
 - Authors can add, edit, and remove stat and item definitions, including initial values, bounds, labels, money display, and hidden stats. Removing a referenced definition leaves a visible validation error until its rules are repaired.
 - Every change passes through `validateStory`. The map and route simulator use only a valid applied snapshot. Browser-local save and JSON download/import can preserve incomplete drafts, while imported data must pass structural and story/version identity checks.
+- Validation messages for passages, choices, stats, and items link to their editing controls. Following a link selects the passage or opens the definitions section and focuses the related field.
 - A bounded path explorer runs against a valid draft on demand. It reports reachable endings and a traceable route to each, blocked non-endings, never-available choices, cycles, and truncation after 5,000 states. Tracing an ending route applies that draft only to the local map preview.
 
 ## Verification
@@ -19,6 +20,6 @@ Status: local single-author draft controls, not a publishing workflow. This exte
 ## Remaining author workflow
 
 - The editor is still attached to the existing New Town story/version. A new story/version creation flow and explicit publication boundary are needed before public authoring.
-- Validation errors are listed but are not linked to the exact field. The bounded explorer does not replace route fixtures or human playtesting and is limited to 5,000 states per click.
+- Story-level and starting-flag validation messages have no field links yet. The bounded explorer does not replace route fixtures or human playtesting and is limited to 5,000 states per click.
 - Browser-local drafts have no cross-device sync or collaboration. Downloaded JSON is the portable backup; published story files are not changed by the editor.
 - Attribution, public credits, ownership, and approval remain separate work before a public author platform.

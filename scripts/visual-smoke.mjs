@@ -67,6 +67,8 @@ try {
       await page.getByRole('button', { name: 'Edit draft' }).click();
       await page.locator('#draft-text').fill('');
       assert.equal(await page.getByRole('button', { name: 'Apply valid draft to map' }).isDisabled(), true);
+      await page.locator('.draft-issues button').filter({ hasText: 'Scene text is required' }).click();
+      assert.equal(await page.evaluate(() => document.activeElement?.id), 'draft-text');
       await page.locator('#draft-text').fill('A revised opening passage.');
       await page.locator('#draft-title').fill('Revised opening');
       await page.getByRole('button', { name: 'Apply valid draft to map' }).click();
@@ -82,6 +84,8 @@ try {
       await courage.getByLabel('Initial').fill('12');
       await courage.getByLabel('Maximum').fill('10');
       assert.equal(await page.getByRole('button', { name: 'Apply valid draft to map' }).isDisabled(), true);
+      await page.locator('.draft-issues button').filter({ hasText: 'Initial value is above max' }).click();
+      assert.equal(await page.evaluate(() => document.activeElement?.closest('.definition-row')?.id), 'definition-stat-courage');
       await courage.getByLabel('Maximum').fill('20');
       await page.getByRole('textbox', { name: 'New item ID' }).fill('key');
       await page.getByRole('button', { name: 'Add item', exact: true }).click();

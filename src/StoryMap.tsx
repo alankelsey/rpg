@@ -241,12 +241,41 @@ function DraftEditor({ story, sceneId, issues, status, onSceneSelect, onChange, 
   const [newSceneId, setNewSceneId] = useState('');
   const [newFlagId, setNewFlagId] = useState('');
   const [message, setMessage] = useState('');
+  const [issueFocus, setIssueFocus] = useState<{ at: string; key: number }>();
   const importRef = useRef<HTMLInputElement | null>(null);
   const [diagnostics, setDiagnostics] = useState<ExploreReport>();
   useEffect(() => setDiagnostics(undefined), [story]);
   const changeDraft = (next: Story) => { setDiagnostics(undefined); onChange(next); };
   const activeId = story.scenes[sceneId] ? sceneId : story.start;
   const scene = story.scenes[activeId]!;
+  useEffect(() => {
+    if (!issueFocus) return;
+    const parts = issueFocus.at.split('.');
+    if (parts[0] === 'scenes' && parts[1] !== activeId) {
+      if (story.scenes[parts[1]!]) onSceneSelect(parts[1]!);
+      return;
+    }
+    let target: HTMLElement | null = null;
+    if (parts[0] === 'stats' || parts[0] === 'items') {
+      const container = document.getElementById(`definition-${parts[0] === 'stats' ? 'stat' : 'item'}-${parts[1]}`);
+      const details = container?.closest('details');
+      if (details) details.open = true;
+      const label = [...(container?.querySelectorAll('label') ?? [])].find((element) => element.textContent?.trim().toLowerCase().startsWith(parts[2] ?? ''));
+      target = (label?.querySelector('input, select') ?? container?.querySelector('input, select, button') ?? null) as HTMLElement | null;
+    } else if (parts[0] === 'scenes') {
+      if (parts[2] === 'choices' && parts[3]) {
+        const row = [...document.querySelectorAll<HTMLElement>('.draft-choice-row')].find((element) => element.dataset.choiceId === parts[3]);
+        const details = row?.querySelector('details');
+        if (details && parts[4] && parts[4] !== 'label') details.open = true;
+        target = (parts[4] === 'label' ? row?.querySelector('input') : parts[4] === 'requires' || parts[4]?.startsWith('requires[') || parts[4] === 'costs' || parts[4] === 'effects' ? details?.querySelector('summary') : row?.querySelector('select')) ?? row ?? null;
+      } else {
+        target = document.getElementById(parts[2] === 'text' ? 'draft-text' : parts[2] === 'title' ? 'draft-title' : 'draft-passage');
+      }
+    }
+    target?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    target?.focus();
+    setIssueFocus(undefined);
+  }, [issueFocus, activeId, onSceneSelect, story.scenes]);
   const errors = issues.filter((issue) => issue.level === 'error');
   const updateScene = (next: Scene) => changeDraft({ ...story, scenes: { ...story.scenes, [activeId]: next } });
   const updateChoice = (id: string, patch: Partial<Choice>) => {
@@ -328,7 +357,7 @@ function DraftEditor({ story, sceneId, issues, status, onSceneSelect, onChange, 
         <div className="draft-choices">
           <div className="draft-choices-heading"><h3>Choices from {scene.title ?? activeId}</h3><button type="button" disabled={Boolean(scene.ending)} onClick={addChoice}>Add choice</button></div>
           {(scene.choices ?? []).map((choice) => (
-            <div key={choice.id} className="draft-choice-row">
+            <div key={choice.id} className="draft-choice-row" data-choice-id={choice.id}>
               <span className="draft-choice-id">{choice.id}</span>
               <label>Player-facing label<input value={choice.label} onChange={(event) => updateChoice(choice.id, { label: event.target.value })} /></label>
               <label>Destination<select value={choice.to} onChange={(event) => updateChoice(choice.id, { to: event.target.value })}>{Object.keys(story.scenes).map((id) => <option key={id} value={id}>{story.scenes[id]?.title ?? id} ({id})</option>)}</select></label>
@@ -341,7 +370,7 @@ function DraftEditor({ story, sceneId, issues, status, onSceneSelect, onChange, 
         </div>
       </div>
       <DefinitionsEditor story={story} onChange={changeDraft} />
-      <div className="draft-issues" aria-live="polite"><h3>Validation</h3>{issues.length === 0 ? <p>Draft is valid.</p> : <ul>{issues.map((issue, index) => <li key={`${issue.at}/${index}`} className={`draft-issue-${issue.level}`}><strong>{issue.level}</strong> {issue.at}: {issue.message}</li>)}</ul>}</div>
+      <div className="draft-issues" aria-live="polite"><h3>Validation</h3>{issues.length === 0 ? <p>Draft is valid.</p> : <ul>{issues.map((issue, index) => <li key={`${issue.at}/${index}`} className={`draft-issue-${issue.level}`}><strong>{issue.level}</strong> {issue.at.startsWith('scenes.') || issue.at.startsWith('stats.') || issue.at.startsWith('items.') ? <button type="button" onClick={() => setIssueFocus({ at: issue.at, key: index })}>{issue.at}: {issue.message}</button> : <span>{issue.at}: {issue.message}</span>}</li>)}</ul>}</div>
       <section className="draft-explorer" aria-labelledby="draft-explorer-heading"><div><h3 id="draft-explorer-heading">Path explorer</h3><button type="button" disabled={errors.length > 0} onClick={() => setDiagnostics(explore(story, 5000))}>Explore valid draft</button></div><p>Runs a bounded engine search from the opening. This supplements human playtesting.</p>{diagnostics && <ExplorerReport story={story} report={diagnostics} onTrace={onTrace} />}</section>
     </section>
   );
