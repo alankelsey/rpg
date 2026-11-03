@@ -69,6 +69,13 @@ export function StoryPicker() {
             <span>Inspect all 21 passages, choice connections, state rules, and four endings.</span>
             <em>Open branching viewer →</em>
           </a>
+          <a className="tool-card map-tool" href="#/create">
+            <span className="tool-number">03</span>
+            <span className="tool-icon" aria-hidden="true">✎</span>
+            <strong>New Story Draft</strong>
+            <span>Start with a two passage template, explore paths, and download your story as JSON.</span>
+            <em>Create a local story →</em>
+          </a>
         </div>
       </section>
 

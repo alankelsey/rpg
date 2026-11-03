@@ -114,6 +114,33 @@ try {
       const editorScreenshot = join(tmpdir(), `rpg-editor-${review.name}.png`);
       await page.screenshot({ path: editorScreenshot, fullPage: true });
       console.log(`${review.name}: ending route, simulation, and draft editor passed; screenshots ${screenshot}, ${editorScreenshot}`);
+      await page.goto(`${baseUrl}/#/create`);
+      await page.getByRole('heading', { name: 'Untitled story map' }).waitFor();
+      assert.equal(await page.locator('#map-draft-editor').count(), 1);
+      await page.locator('.draft-story-details summary').click();
+      await page.locator('#draft-story-id').fill('new-town');
+      assert.equal(await page.getByRole('button', { name: 'Apply valid draft to map' }).isDisabled(), true);
+      await page.locator('.draft-issues button').filter({ hasText: 'already in the repo' }).click();
+      assert.equal(await page.evaluate(() => document.activeElement?.id), 'draft-story-id');
+      await page.locator('#draft-story-id').fill('my-new-story');
+      await page.locator('#draft-story-title').fill('My New Story');
+      await page.getByRole('button', { name: 'Apply valid draft to map' }).click();
+      await page.getByRole('heading', { name: 'My New Story map' }).waitFor();
+      await page.getByRole('button', { name: 'Save locally' }).click();
+      await page.reload();
+      await page.getByRole('heading', { name: 'My New Story map' }).waitFor();
+      await page.locator('.draft-story-details summary').click();
+      assert.equal(await page.locator('#draft-story-id').inputValue(), 'my-new-story');
+      const newStoryDownloadPromise = page.waitForEvent('download');
+      await page.getByRole('button', { name: 'Download JSON' }).click();
+      const newStoryDownload = await newStoryDownloadPromise;
+      const newStory = JSON.parse(await (await import('node:fs/promises')).readFile(await newStoryDownload.path(), 'utf8'));
+      assert.equal(newStory.id, 'my-new-story');
+      assert.equal(newStory.title, 'My New Story');
+      assert.equal(Object.keys(newStory.scenes).length, 2);
+      const createOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      assert.equal(createOverflow, 0, `${review.name} new story editor overflows horizontally by ${createOverflow}px`);
+      await page.screenshot({ path: join(tmpdir(), `rpg-new-story-${review.name}.png`), fullPage: true });
       await page.close();
     }
   } finally {

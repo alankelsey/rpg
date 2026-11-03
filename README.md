@@ -11,14 +11,15 @@ The playable foundation of Stage 1 is complete. The repository now includes a st
 Stage 1 experimentation covers:
 
 - A visual branching-structure viewer and editor for passages and choices.
+- A local new-story editor at `#/create` with a two-passage starter, browser-local save, validation, path preview, and JSON download. New Town remains the repo's published starter story.
 - Connecting and reconnecting choice paths to passage nodes, including branches that split and later rejoin.
 - A visual multiple-endings tree that distinguishes good, neutral, and bad outcomes and makes routes to each ending inspectable.
 - State tracking that shows how stats, flags, requirements, and effects unlock or block later paths.
 - Navigation between the map, passage editor, and playable preview.
 
-The read-only map is the first completed structure experiment. The engine/state gate is also complete: versioned run/save data, inventory and composed requirements, explicit resource costs, deterministic transition events, strict story/save parsing, bounded replay and exploration, immutable story-version loading, cycle/blocked-state diagnostics, and canonical route simulation are implemented and tested. Details are in [docs/engine-state-roadmap.md](docs/engine-state-roadmap.md).
+The map, local draft editor, and new-story JSON workflow are available as structure experiments. The engine/state gate is also complete: versioned run/save data, inventory and composed requirements, explicit resource costs, deterministic transition events, strict story/save parsing, bounded replay and exploration, immutable story-version loading, cycle/blocked-state diagnostics, and canonical route simulation are implemented and tested. Details are in [docs/engine-state-roadmap.md](docs/engine-state-roadmap.md).
 
-The engine/state gate and desktop/mobile visual acceptance for the story map and ending-route state preview are complete. The next Stage 1 work is passage/choice editing, reconnecting paths, draft persistence/export, and playable preview against the stable engine contract.
+The engine/state gate and desktop/mobile visual acceptance for the story map, ending-route state preview, and draft controls are complete. The current authoring workflow is local save, preview, and JSON download; publication still requires a reviewed repo change.
 
 Stage 1 is complete when the engine/state gate and structure experiments work against "New Town," the chosen approach and rejected alternatives are documented, all intended endings remain reachable, save/resume works exactly, and keyboard/mobile play and human playtesting pass. Stage 2 then turns the findings into a dependable private author workflow where another author can validate, preview, and publish a short story without changing engine code.
 
@@ -29,7 +30,7 @@ Stage 1 is complete when the engine/state gate and structure experiments work ag
 - Save download and restore for moving progress between browsers.
 - Declarative story graphs with versioned scenes, choices, conditions, effects, stats, and flags.
 - Visible locked choices, secret choices, stat-change feedback, ending discovery, and replay support.
-- A read-only branching flow chart with passage inspection, labeled choices, state rules, and color-coded endings.
+- A branching flow chart with passage inspection, labeled choices, state rules, color-coded endings, and a local draft editor.
 - A pure story engine with no browser or UI dependencies.
 - Story validation and bounded path exploration that check every published story for broken paths, unreachable endings, and unusable choices.
 

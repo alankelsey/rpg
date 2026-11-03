@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { choiceViews, explore, formatStat, lockedReason, simulateRoute, validateStory, type Choice, type Condition, type ExploreReport, type Issue, type RouteSimulation, type Scene, type Story, type TransitionEvent } from './engine';
 import { navigate } from './router';
 import { MAP_NODE_HEIGHT, MAP_NODE_WIDTH, layoutStory } from './story-map/layout';
-import { downloadStoryDraft, loadStoryDraft, readStoryDraftFile, saveStoryDraft } from './story-map/draft-store';
+import { downloadStoryDraft, loadNewStoryDraft, loadStoryDraft, readNewStoryDraftFile, readStoryDraftFile, saveNewStoryDraft, saveStoryDraft } from './story-map/draft-store';
+import { newStoryTemplate } from './story-map/new-story';
 import { ChoiceRulesEditor } from './story-map/ChoiceRulesEditor';
 import { DefinitionsEditor } from './story-map/DefinitionsEditor';
 import { findStory } from './stories/catalog';
@@ -41,14 +42,22 @@ export function StoryMap({ storyId }: { storyId: string }) {
   return <MapView story={load.story} />;
 }
 
-function MapView({ story: publishedStory }: { story: Story }) {
-  const [story, setStory] = useState(publishedStory);
-  const [storedDraft] = useState(() => loadStoryDraft(publishedStory));
+export function NewStoryMap() {
+  return <MapView story={newStoryTemplate()} localOnly />;
+}
+
+function MapView({ story: publishedStory, localOnly = false }: { story: Story; localOnly?: boolean }) {
+  const [storedDraft] = useState(() => localOnly ? loadNewStoryDraft() : loadStoryDraft(publishedStory));
+  const [story, setStory] = useState(() => localOnly && storedDraft.draft && validateStory(storedDraft.draft).every((issue) => issue.level !== 'error') && !findStory(storedDraft.draft.id) ? storedDraft.draft : publishedStory);
   const [draft, setDraft] = useState<Story>(() => storedDraft.draft ?? structuredClone(publishedStory));
   const [draftStatus, setDraftStatus] = useState(storedDraft.notice ?? 'Draft changes are in memory until saved or downloaded.');
-  const [editorOpen, setEditorOpen] = useState(false);
-  const [editorSceneId, setEditorSceneId] = useState(publishedStory.start);
-  const draftIssues = useMemo(() => validateStory(draft), [draft]);
+  const [editorOpen, setEditorOpen] = useState(localOnly);
+  const [editorSceneId, setEditorSceneId] = useState(() => storedDraft.draft?.scenes[storedDraft.draft.start] ? storedDraft.draft.start : publishedStory.start);
+  const draftIssues = useMemo(() => {
+    const issues = validateStory(draft);
+    if (localOnly && findStory(draft.id)) issues.unshift({ level: 'error', at: 'id', message: 'This ID belongs to a story already in the repo' });
+    return issues;
+  }, [draft, localOnly]);
   const draftErrors = draftIssues.filter((issue) => issue.level === 'error');
   const layout = useMemo(() => layoutStory(story), [story]);
   const exploration = useMemo(() => explore(story), [story]);
@@ -100,7 +109,7 @@ function MapView({ story: publishedStory }: { story: Story }) {
   };
   const importDraft = async (file: File) => {
     try {
-      const imported = await readStoryDraftFile(file, publishedStory);
+      const imported = localOnly ? await readNewStoryDraftFile(file) : await readStoryDraftFile(file, publishedStory);
       setDraft(imported);
       setEditorSceneId(imported.start);
       setDraftStatus('Draft imported. Save locally or download a copy to keep it.');
@@ -124,11 +133,11 @@ function MapView({ story: publishedStory }: { story: Story }) {
         <nav className="reader-nav" aria-label="Story map navigation">
           <button type="button" className="link" onClick={() => navigate('#/')}>← Stories</button>
           <span className="reader-title">Stage 1 · Branching workbench</span>
-          <button type="button" className="link" onClick={() => navigate(`#/story/${story.id}`)}>Play story →</button>
+          {localOnly ? <span>Local JSON draft</span> : <button type="button" className="link" onClick={() => navigate(`#/story/${story.id}`)}>Play story →</button>}
         </nav>
         <div className="map-heading">
           <div>
-            <p className="eyebrow">{story === publishedStory ? 'Story structure' : 'Unsaved draft preview'}</p>
+            <p className="eyebrow">{localOnly ? 'New story · local draft' : story === publishedStory ? 'Story structure' : 'Unsaved draft preview'}</p>
             <h1>{story.title} map</h1>
             <p className="lede">Follow choices from the opening passage to {endingCount} possible endings.</p>
           </div>
@@ -220,16 +229,17 @@ function MapView({ story: publishedStory }: { story: Story }) {
           onSelect={selectNode}
         />
       </div>
-      {editorOpen && <DraftEditor story={draft} sceneId={editorSceneId} issues={draftIssues} status={draftStatus} onSceneSelect={setEditorSceneId} onChange={updateDraft} onApply={applyDraft} onSave={() => setDraftStatus(saveStoryDraft(publishedStory, draft) ?? 'Draft saved in this browser.')} onDownload={() => downloadStoryDraft(draft)} onImport={importDraft} onTrace={traceDraftRoute} />}
+      {editorOpen && <DraftEditor story={draft} sceneId={editorSceneId} issues={draftIssues} status={draftStatus} localOnly={localOnly} onSceneSelect={setEditorSceneId} onChange={updateDraft} onApply={applyDraft} onSave={() => setDraftStatus((localOnly ? saveNewStoryDraft(draft) : saveStoryDraft(publishedStory, draft)) ?? 'Draft saved in this browser.')} onDownload={() => downloadStoryDraft(draft)} onImport={importDraft} onTrace={traceDraftRoute} />}
     </main>
   );
 }
 
-function DraftEditor({ story, sceneId, issues, status, onSceneSelect, onChange, onApply, onSave, onDownload, onImport, onTrace }: {
+function DraftEditor({ story, sceneId, issues, status, localOnly, onSceneSelect, onChange, onApply, onSave, onDownload, onImport, onTrace }: {
   story: Story;
   sceneId: string;
   issues: Issue[];
   status: string;
+  localOnly: boolean;
   onSceneSelect: (id: string) => void;
   onChange: (story: Story) => void;
   onApply: () => void;
@@ -256,7 +266,7 @@ function DraftEditor({ story, sceneId, issues, status, onSceneSelect, onChange, 
       return;
     }
     let target: HTMLElement | null = null;
-    if (parts[0] === 'title' || parts[0] === 'summary' || parts[0] === 'start') {
+    if (parts[0] === 'id' || parts[0] === 'title' || parts[0] === 'summary' || parts[0] === 'start') {
       const field = document.getElementById(`draft-story-${parts[0]}`);
       const details = field?.closest('details');
       if (details) details.open = true;
@@ -338,13 +348,14 @@ function DraftEditor({ story, sceneId, issues, status, onSceneSelect, onChange, 
         <div><p className="eyebrow">Local experiment · unpublished</p><h2 id="draft-editor-heading">Passage & choice editor</h2></div>
         <div className="draft-editor-actions"><span>{errors.length} errors · {issues.length - errors.length} warnings</span><button type="button" disabled={errors.length > 0} onClick={onApply}>Apply valid draft to map</button></div>
       </div>
-      <p className="draft-editor-note">Edit a copy of the story. The map and simulator keep using the last valid version until you apply this draft. Playing the story still opens the published version.</p>
+      <p className="draft-editor-note">{localOnly ? 'Build a new story here. Save it in this browser or download JSON. Applying a valid draft updates only this local map preview.' : 'Edit a copy of the story. The map and simulator keep using the last valid version until you apply this draft. Playing the story still opens the published version.'}</p>
       <div className="draft-file-actions"><button type="button" onClick={onSave}>Save locally</button><button type="button" onClick={onDownload}>Download JSON</button><button type="button" onClick={() => importRef.current?.click()}>Import JSON</button><input ref={importRef} type="file" accept=".json,application/json" aria-label="Import story draft JSON" onChange={(event) => { const file = event.target.files?.[0]; if (file) onImport(file); event.target.value = ''; }} /><span role="status">{status}</span></div>
       <details className="draft-story-details"><summary>Story details</summary><div className="draft-story-fields">
+        {localOnly && <><label htmlFor="draft-story-id">Story ID</label><input id="draft-story-id" value={story.id} onChange={(event) => changeDraft({ ...story, id: event.target.value })} /></>}
         <label htmlFor="draft-story-title">Story title</label><input id="draft-story-title" value={story.title} onChange={(event) => changeDraft({ ...story, title: event.target.value })} />
         <label htmlFor="draft-story-summary">Summary</label><textarea id="draft-story-summary" rows={3} value={story.summary} onChange={(event) => changeDraft({ ...story, summary: event.target.value })} />
         <label htmlFor="draft-story-start">Opening passage</label><select id="draft-story-start" value={story.start} onChange={(event) => changeDraft({ ...story, start: event.target.value })}>{Object.entries(story.scenes).map(([id, item]) => <option key={id} value={id}>{item.title ?? id} ({id})</option>)}</select>
-        <p>Draft for {story.id}, version {story.version}. Story identity stays fixed in this local editor.</p>
+        <p>{localOnly ? 'Version 1 · Save locally or download JSON when ready.' : `Draft for ${story.id}, version ${story.version}. Story identity stays fixed in this local editor.`}</p>
       </div></details>
       <div className="draft-editor-grid">
         <div className="draft-fields">
@@ -381,7 +392,7 @@ function DraftEditor({ story, sceneId, issues, status, onSceneSelect, onChange, 
         </div>
       </div>
       <DefinitionsEditor story={story} onChange={changeDraft} />
-      <div className="draft-issues" aria-live="polite"><h3>Validation</h3>{issues.length === 0 ? <p>Draft is valid.</p> : <ul>{issues.map((issue, index) => <li key={`${issue.at}/${index}`} className={`draft-issue-${issue.level}`}><strong>{issue.level}</strong> {['title', 'summary', 'start'].includes(issue.at) || issue.at.startsWith('scenes.') || issue.at.startsWith('stats.') || issue.at.startsWith('items.') ? <button type="button" onClick={() => setIssueFocus({ at: issue.at, key: index })}>{issue.at}: {issue.message}</button> : <span>{issue.at}: {issue.message}</span>}</li>)}</ul>}</div>
+      <div className="draft-issues" aria-live="polite"><h3>Validation</h3>{issues.length === 0 ? <p>Draft is valid.</p> : <ul>{issues.map((issue, index) => <li key={`${issue.at}/${index}`} className={`draft-issue-${issue.level}`}><strong>{issue.level}</strong> {(localOnly && issue.at === 'id') || ['title', 'summary', 'start'].includes(issue.at) || issue.at.startsWith('scenes.') || issue.at.startsWith('stats.') || issue.at.startsWith('items.') ? <button type="button" onClick={() => setIssueFocus({ at: issue.at, key: index })}>{issue.at}: {issue.message}</button> : <span>{issue.at}: {issue.message}</span>}</li>)}</ul>}</div>
       <section className="draft-explorer" aria-labelledby="draft-explorer-heading"><div><h3 id="draft-explorer-heading">Path explorer</h3><button type="button" disabled={errors.length > 0} onClick={() => setDiagnostics(explore(story, 5000))}>Explore valid draft</button></div><p>Runs a bounded engine search from the opening. This supplements human playtesting.</p>{diagnostics && <ExplorerReport story={story} report={diagnostics} onTrace={onTrace} />}</section>
     </section>
   );

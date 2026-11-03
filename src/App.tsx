@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { StoryPicker } from './StoryPicker';
 import { Reader } from './Reader';
-import { StoryMap } from './StoryMap';
+import { NewStoryMap, StoryMap } from './StoryMap';
 import { ApiDocs } from './ApiDocs';
 import { currentRoute } from './router';
 
@@ -15,6 +15,7 @@ export function App() {
   }, []);
 
   if (route.storyId && route.view === 'map') return <StoryMap key={`map/${route.storyId}`} storyId={route.storyId} />;
+  if (route.view === 'create') return <NewStoryMap />;
   if (route.storyId && route.view === 'reader') return <Reader key={route.storyId} storyId={route.storyId} />;
   if (route.view === 'docs') return <ApiDocs />;
   return <StoryPicker />;
