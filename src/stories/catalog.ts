@@ -1,4 +1,4 @@
-import type { Story } from '../engine';
+import { parseStory, type Story } from '../engine';
 
 export interface CatalogEntry {
   id: string;
@@ -31,7 +31,7 @@ export const catalog: CatalogEntry[] = [
       'You step off a bus in a small town with $1,500 and a blue JanSport backpack. One week to find work and a place to live.',
     latestVersion: 1,
     versions: {
-      1: async () => (await import('./new-town.json')).default as unknown as Story,
+      1: async () => parseStory((await import('./new-town.json')).default),
     },
   }),
 ];
