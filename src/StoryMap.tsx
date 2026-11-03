@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { choiceViews, explore, formatStat, lockedReason, simulateRoute, validateStory, type Choice, type Condition, type RouteSimulation, type Scene, type Story, type TransitionEvent } from './engine';
+import { choiceViews, explore, formatStat, lockedReason, simulateRoute, validateStory, type Choice, type Condition, type Issue, type RouteSimulation, type Scene, type Story, type TransitionEvent } from './engine';
 import { navigate } from './router';
 import { MAP_NODE_HEIGHT, MAP_NODE_WIDTH, layoutStory } from './story-map/layout';
+import { downloadStoryDraft, loadStoryDraft, readStoryDraftFile, saveStoryDraft } from './story-map/draft-store';
 import { findStory } from './stories/catalog';
 import { WorkspaceNav } from './WorkspaceNav';
 
@@ -38,7 +39,15 @@ export function StoryMap({ storyId }: { storyId: string }) {
   return <MapView story={load.story} />;
 }
 
-function MapView({ story }: { story: Story }) {
+function MapView({ story: publishedStory }: { story: Story }) {
+  const [story, setStory] = useState(publishedStory);
+  const [storedDraft] = useState(() => loadStoryDraft(publishedStory));
+  const [draft, setDraft] = useState<Story>(() => storedDraft.draft ?? structuredClone(publishedStory));
+  const [draftStatus, setDraftStatus] = useState(storedDraft.notice ?? 'Draft changes are in memory until saved or downloaded.');
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editorSceneId, setEditorSceneId] = useState(publishedStory.start);
+  const draftIssues = useMemo(() => validateStory(draft), [draft]);
+  const draftErrors = draftIssues.filter((issue) => issue.level === 'error');
   const layout = useMemo(() => layoutStory(story), [story]);
   const exploration = useMemo(() => explore(story), [story]);
   const [selectedId, setSelectedId] = useState(story.start);
@@ -60,6 +69,7 @@ function MapView({ story }: { story: Story }) {
 
   const selectNode = (id: string, scroll = false) => {
     setSelectedId(id);
+    setEditorSceneId(id);
     if (scroll) {
       const node = nodeById.get(id);
       const viewport = viewportRef.current;
@@ -75,6 +85,27 @@ function MapView({ story }: { story: Story }) {
     if (!preview || !choiceViews(story, preview.final).some((view) => view.choice.id === choiceId && view.available)) return;
     setRoute([...preview.final.history, choiceId]);
   };
+  const applyDraft = () => {
+    if (draftErrors.length > 0) return;
+    const nextStory = structuredClone(draft);
+    setStory(nextStory);
+    setPreviewHistory(undefined);
+    setSelectedId(editorSceneId in nextStory.scenes ? editorSceneId : nextStory.start);
+  };
+  const updateDraft = (next: Story) => {
+    setDraft(next);
+    setDraftStatus('Draft has changes that are not saved locally.');
+  };
+  const importDraft = async (file: File) => {
+    try {
+      const imported = await readStoryDraftFile(file, publishedStory);
+      setDraft(imported);
+      setEditorSceneId(imported.start);
+      setDraftStatus('Draft imported. Save locally or download a copy to keep it.');
+    } catch (error) {
+      setDraftStatus(error instanceof Error ? error.message : 'Draft import failed.');
+    }
+  };
 
   return (
     <main className="map-page">
@@ -82,14 +113,14 @@ function MapView({ story }: { story: Story }) {
         <WorkspaceNav active="map" />
         <nav className="reader-nav" aria-label="Story map navigation">
           <button type="button" className="link" onClick={() => navigate('#/')}>← Stories</button>
-          <span className="reader-title">Stage 1 · Branching viewer</span>
+          <span className="reader-title">Stage 1 · Branching workbench</span>
           <button type="button" className="link" onClick={() => navigate(`#/story/${story.id}`)}>Play story →</button>
         </nav>
         <div className="map-heading">
           <div>
-            <p className="eyebrow">Story structure</p>
+            <p className="eyebrow">{story === publishedStory ? 'Story structure' : 'Unsaved draft preview'}</p>
             <h1>{story.title} map</h1>
-            <p className="lede">Follow every choice from the opening passage to four possible endings.</p>
+            <p className="lede">Follow choices from the opening passage to {endingCount} possible endings.</p>
           </div>
           <dl className="map-summary" aria-label="Map summary">
             <div><dt>Passages</dt><dd>{layout.nodes.length}</dd></div>
@@ -110,6 +141,7 @@ function MapView({ story }: { story: Story }) {
           <input type="checkbox" checked={showLabels} onChange={(event) => setShowLabels(event.target.checked)} />
           Choice labels
         </label>
+        <button type="button" className="map-edit-toggle" aria-expanded={editorOpen} aria-controls="map-draft-editor" onClick={() => setEditorOpen((open) => !open)}>{editorOpen ? 'Close draft editor' : 'Edit draft'}</button>
         <div className="map-legend" aria-label="Ending legend">
           <span><i className="legend-dot good" /> Good</span>
           <span><i className="legend-dot neutral" /> Neutral</span>
@@ -178,7 +210,114 @@ function MapView({ story }: { story: Story }) {
           onSelect={selectNode}
         />
       </div>
+      {editorOpen && <DraftEditor story={draft} sceneId={editorSceneId} issues={draftIssues} status={draftStatus} onSceneSelect={setEditorSceneId} onChange={updateDraft} onApply={applyDraft} onSave={() => setDraftStatus(saveStoryDraft(publishedStory, draft) ?? 'Draft saved in this browser.')} onDownload={() => downloadStoryDraft(draft)} onImport={importDraft} />}
     </main>
+  );
+}
+
+function DraftEditor({ story, sceneId, issues, status, onSceneSelect, onChange, onApply, onSave, onDownload, onImport }: {
+  story: Story;
+  sceneId: string;
+  issues: Issue[];
+  status: string;
+  onSceneSelect: (id: string) => void;
+  onChange: (story: Story) => void;
+  onApply: () => void;
+  onSave: () => void;
+  onDownload: () => void;
+  onImport: (file: File) => void;
+}) {
+  const [newSceneId, setNewSceneId] = useState('');
+  const [message, setMessage] = useState('');
+  const importRef = useRef<HTMLInputElement | null>(null);
+  const activeId = story.scenes[sceneId] ? sceneId : story.start;
+  const scene = story.scenes[activeId]!;
+  const errors = issues.filter((issue) => issue.level === 'error');
+  const updateScene = (next: Scene) => onChange({ ...story, scenes: { ...story.scenes, [activeId]: next } });
+  const updateChoice = (id: string, patch: Partial<Choice>) => {
+    updateScene({ ...scene, choices: (scene.choices ?? []).map((choice) => choice.id === id ? { ...choice, ...patch } : choice) });
+  };
+  const createScene = () => {
+    const id = newSceneId.trim();
+    if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/.test(id)) {
+      setMessage('Use a 1–64 character ID starting with a letter or number, then letters, numbers, _ or -.');
+      return;
+    }
+    if (story.scenes[id] || Object.values(story.scenes).some((item) => item.ending?.id === id)) {
+      setMessage(`Passage or ending ID “${id}” already exists.`);
+      return;
+    }
+    const next: Scene = { title: id, text: 'Write this passage.', ending: { id, title: id, tone: 'neutral' } };
+    onChange({ ...story, scenes: { ...story.scenes, [id]: next } });
+    onSceneSelect(id);
+    setNewSceneId('');
+    setMessage('New ending passage created. Connect an incoming choice to make it reachable.');
+  };
+  const removeScene = () => {
+    if (activeId === story.start || !window.confirm(`Remove passage “${scene.title ?? activeId}” from this draft? Incoming choices will need new destinations.`)) return;
+    const nextScenes = { ...story.scenes };
+    delete nextScenes[activeId];
+    onChange({ ...story, scenes: nextScenes });
+    onSceneSelect(story.start);
+    setMessage(`Passage “${activeId}” removed from the draft. Reconnect any incoming choices before applying.`);
+  };
+  const addChoice = () => {
+    const used = new Set((scene.choices ?? []).map((choice) => choice.id));
+    let index = 1;
+    while (used.has(`choice${index}`)) index++;
+    updateScene({ ...scene, choices: [...(scene.choices ?? []), { id: `choice${index}`, label: 'New choice', to: story.start }] });
+  };
+  const toggleEnding = () => {
+    if (scene.ending) {
+      const { ending: _ending, ...passage } = scene;
+      updateScene({ ...passage, choices: [] });
+    } else if ((scene.choices ?? []).length === 0) {
+      updateScene({ ...scene, ending: { id: activeId, title: scene.title ?? activeId, tone: 'neutral' } });
+    }
+  };
+  return (
+    <section id="map-draft-editor" className="map-draft-editor" aria-labelledby="draft-editor-heading">
+      <div className="draft-editor-heading">
+        <div><p className="eyebrow">Local experiment · unpublished</p><h2 id="draft-editor-heading">Passage & choice editor</h2></div>
+        <div className="draft-editor-actions"><span>{errors.length} errors · {issues.length - errors.length} warnings</span><button type="button" disabled={errors.length > 0} onClick={onApply}>Apply valid draft to map</button></div>
+      </div>
+      <p className="draft-editor-note">Edit a copy of the story. The map and simulator keep using the last valid version until you apply this draft. Playing the story still opens the published version.</p>
+      <div className="draft-file-actions"><button type="button" onClick={onSave}>Save locally</button><button type="button" onClick={onDownload}>Download JSON</button><button type="button" onClick={() => importRef.current?.click()}>Import JSON</button><input ref={importRef} type="file" accept=".json,application/json" aria-label="Import story draft JSON" onChange={(event) => { const file = event.target.files?.[0]; if (file) onImport(file); event.target.value = ''; }} /><span role="status">{status}</span></div>
+      <div className="draft-editor-grid">
+        <div className="draft-fields">
+          <label htmlFor="draft-passage">Passage to edit</label>
+          <select id="draft-passage" value={activeId} onChange={(event) => onSceneSelect(event.target.value)}>
+            {Object.entries(story.scenes).map(([id, item]) => <option key={id} value={id}>{item.title ?? id} ({id})</option>)}
+          </select>
+          <label htmlFor="draft-title">Title</label>
+          <input id="draft-title" value={scene.title ?? ''} onChange={(event) => updateScene({ ...scene, title: event.target.value, ending: scene.ending ? { ...scene.ending, title: event.target.value } : undefined })} />
+          <label htmlFor="draft-text">Passage text</label>
+          <textarea id="draft-text" rows={8} value={scene.text} onChange={(event) => updateScene({ ...scene, text: event.target.value })} />
+          <div className="draft-ending-control">
+            <span>{scene.ending ? `${scene.ending.tone} ending` : 'Story passage'}</span>
+            <button type="button" disabled={!scene.ending && (scene.choices?.length ?? 0) > 0} onClick={toggleEnding}>{scene.ending ? 'Convert to passage' : 'Mark as ending'}</button>
+            {scene.ending && <select aria-label="Ending tone" value={scene.ending.tone} onChange={(event) => updateScene({ ...scene, ending: { ...scene.ending!, tone: event.target.value as NonNullable<Scene['ending']>['tone'] } })}><option value="good">Good</option><option value="neutral">Neutral</option><option value="bad">Hard</option></select>}
+          </div>
+          <button type="button" className="draft-remove-passage" disabled={activeId === story.start} onClick={removeScene}>Remove selected passage</button>
+          <div className="draft-create"><label htmlFor="draft-new-id">New passage ID</label><div><input id="draft-new-id" value={newSceneId} onChange={(event) => setNewSceneId(event.target.value)} placeholder="e.g. crossroads" /><button type="button" onClick={createScene}>Add passage</button></div>{message && <p role="status">{message}</p>}</div>
+        </div>
+        <div className="draft-choices">
+          <div className="draft-choices-heading"><h3>Choices from {scene.title ?? activeId}</h3><button type="button" disabled={Boolean(scene.ending)} onClick={addChoice}>Add choice</button></div>
+          {(scene.choices ?? []).map((choice) => (
+            <div key={choice.id} className="draft-choice-row">
+              <span className="draft-choice-id">{choice.id}</span>
+              <label>Player-facing label<input value={choice.label} onChange={(event) => updateChoice(choice.id, { label: event.target.value })} /></label>
+              <label>Destination<select value={choice.to} onChange={(event) => updateChoice(choice.id, { to: event.target.value })}>{Object.keys(story.scenes).map((id) => <option key={id} value={id}>{story.scenes[id]?.title ?? id} ({id})</option>)}</select></label>
+              <button type="button" className="draft-remove" onClick={() => updateScene({ ...scene, choices: (scene.choices ?? []).filter((item) => item.id !== choice.id) })}>Remove choice</button>
+              {(choice.requires?.length || choice.costs || choice.effects) && <small>Requirements, costs, and effects are preserved. Their controls come in the later author workflow.</small>}
+            </div>
+          ))}
+          {scene.ending && <p>This ending has no outgoing choices. Convert it to a passage to add one.</p>}
+          {!scene.ending && (scene.choices?.length ?? 0) === 0 && <p>Add at least one choice or mark this as an ending.</p>}
+        </div>
+      </div>
+      <div className="draft-issues" aria-live="polite"><h3>Validation</h3>{issues.length === 0 ? <p>Draft is valid.</p> : <ul>{issues.map((issue, index) => <li key={`${issue.at}/${index}`} className={`draft-issue-${issue.level}`}><strong>{issue.level}</strong> {issue.at}: {issue.message}</li>)}</ul>}</div>
+    </section>
   );
 }
 

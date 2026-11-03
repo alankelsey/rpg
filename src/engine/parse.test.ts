@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { StoryFormatError, parseStory } from './parse';
+import { StoryFormatError, parseStory, parseStoryDraft } from './parse';
 import { testStory } from './test-story';
 
 describe('parseStory', () => {
@@ -29,6 +29,16 @@ describe('parseStory', () => {
     const broken = structuredClone(testStory);
     broken.scenes.curb!.choices![0]!.to = 'missing';
     expect(() => parseStory(broken)).toThrow(/Leads to missing scene/);
+  });
+
+  it('keeps incomplete editor drafts but still rejects malformed shapes', () => {
+    const draft = structuredClone(testStory);
+    draft.scenes.curb!.text = '';
+    draft.scenes.curb!.choices![0]!.to = 'missing';
+    expect(parseStoryDraft(draft)).toEqual(draft);
+    expect(() => parseStory(draft)).toThrow(StoryFormatError);
+    (draft.scenes.curb!.choices![0] as unknown as { label: unknown }).label = 42;
+    expect(() => parseStoryDraft(draft)).toThrow(/must be a string/);
   });
 
   it('bounds recursive condition depth', () => {

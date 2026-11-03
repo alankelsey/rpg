@@ -64,7 +64,16 @@ try {
       assert.match(await locked.textContent(), /Needs Energy 40\+/);
       await page.getByRole('button', { name: '← Undo choice' }).click();
       await page.getByText('Canonical state after 3 choices').waitFor();
-      console.log(`${review.name}: ending route and interactive simulation passed; screenshot ${screenshot}`);
+      await page.getByRole('button', { name: 'Edit draft' }).click();
+      await page.locator('#draft-text').fill('');
+      assert.equal(await page.getByRole('button', { name: 'Apply valid draft to map' }).isDisabled(), true);
+      await page.locator('#draft-text').fill('A revised opening passage.');
+      await page.locator('#draft-title').fill('Revised opening');
+      await page.getByRole('button', { name: 'Apply valid draft to map' }).click();
+      assert((await page.locator('.map-node').filter({ hasText: 'Revised opening' }).count()) > 0);
+      const editorOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      assert.equal(editorOverflow, 0, `${review.name} editor overflows horizontally by ${editorOverflow}px`);
+      console.log(`${review.name}: ending route, simulation, and draft editor passed; screenshot ${screenshot}`);
       await page.close();
     }
   } finally {

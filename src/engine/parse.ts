@@ -9,8 +9,8 @@ export class StoryFormatError extends Error {
   }
 }
 
-/** Runtime boundary for authored/imported JSON. Returns only data safe for the typed validator and engine. */
-export function parseStory(value: unknown): Story {
+/** Structural boundary for an in-progress draft. Semantic errors remain visible in the editor. */
+export function parseStoryDraft(value: unknown): Story {
   const problems: string[] = [];
   const problem = (path: string, message: string) => problems.push(`${path}: ${message}`);
   if (!isRecord(value)) throw new StoryFormatError(['story: must be an object']);
@@ -63,7 +63,12 @@ export function parseStory(value: unknown): Story {
   }
 
   if (problems.length > 0) throw new StoryFormatError(problems);
-  const story = structuredClone(value) as unknown as Story;
+  return structuredClone(value) as unknown as Story;
+}
+
+/** Runtime boundary for authored/imported JSON. Returns only data safe for the engine. */
+export function parseStory(value: unknown): Story {
+  const story = parseStoryDraft(value);
   const semanticErrors = validateStory(story).filter((issue) => issue.level === 'error');
   if (semanticErrors.length > 0) {
     throw new StoryFormatError(semanticErrors.map((issue) => `${issue.at}: ${issue.message}`));

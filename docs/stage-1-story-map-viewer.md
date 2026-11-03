@@ -1,6 +1,6 @@
 # Stage 1 story-map viewer experiment
 
-Status: implemented and visually accepted at desktop and narrow widths. The [engine and state implementation gate](engine-state-roadmap.md) is complete; editor experiments can now begin.
+Status: viewer and route simulation accepted at desktop and narrow widths. The [engine and state implementation gate](engine-state-roadmap.md) is complete; the editor experiment is recorded in [stage-1-editor-experiment.md](stage-1-editor-experiment.md).
 
 ## Question
 
@@ -20,14 +20,14 @@ Can the current story data produce a useful visual flow chart without maintainin
 
 The layout is native React, HTML, and SVG so the first review measures the information design without committing to an editor framework. It uses a left-to-right layered layout with a safe fallback for future cyclic stories.
 
-## Deliberately deferred
+## Viewer limits at acceptance
 
 - Creating, reconnecting, or deleting nodes and edges.
 - Editing prose, choice labels, requirements, or effects.
 - Saving changes back to story JSON.
 - Collaborative editing or publication.
 
-Passage and choice editing belong to the next experiment. The route simulator is read-only and starts from a clean sample run; it does not modify a player's save.
+The subsequent editor experiment now covers passage and edge changes in a local draft. The route simulator remains read-only and starts from a clean sample run; it does not modify a player's save.
 
 ## Review checklist
 

@@ -193,6 +193,8 @@ With the engine/state gate complete, the remaining Stage 1 experiments must cove
 
 Stage 1 closes only after all five experiments run against "New Town," their limitations are written down, and a decision records what will be carried into Stage 2. The experiment can be disposable; its findings and the single-source-of-truth contract are not. A polished collaborative editor, accounts, and public publishing remain outside Stage 1.
 
+Update 2026-11-03: the five structure experiments now run against New Town. The [map viewer review](stage-1-story-map-viewer.md) and [editor experiment](stage-1-editor-experiment.md) record their behavior, limits, and the design to carry into Stage 2. This closes the structure-experiment portion of Stage 1; the broader playable-story acceptance and human playtesting still need their own review.
+
 Defer payments, contribution credits, merch revenue sharing, live generated scenes, and paid inference until engagement justifies them. The plan's “no pay-to-win exists in a CYOA” is not inherently true; paid resources or influence could create it. Define the intended fairness policy before adding an economy. Do not reward voting with tradable credits before abuse and accounting rules exist.
 
 ## 7. Corrections to carry into the next formal plan
