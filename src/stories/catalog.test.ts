@@ -10,6 +10,16 @@ describe.each(catalog)('story $id', (entry) => {
       title: entry.title,
       summary: entry.summary,
     });
+    expect(story.version).toBe(entry.latestVersion);
+  });
+
+  it('loads every retained immutable version by its exact version', async () => {
+    for (const version of Object.keys(entry.versions).map(Number)) {
+      const story = await entry.loadVersion(version);
+      expect(story).toMatchObject({ id: entry.id, version });
+      expect(validateStory(story!)).toEqual([]);
+    }
+    expect(entry.loadVersion(999)).toBeUndefined();
   });
 
   it('passes validation with no errors or warnings', async () => {

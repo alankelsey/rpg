@@ -30,12 +30,21 @@ export function Reader({ storyId }: { storyId: string }) {
   useEffect(() => {
     const entry = findStory(storyId);
     if (!entry) return setLoad({ kind: 'error', message: "That story doesn't exist." });
-    entry
-      .load()
+    const save = loadSave(storyId);
+    const requestedVersion = save && !save.ended ? save.storyVersion : entry.latestVersion;
+    const requested = entry.loadVersion(requestedVersion);
+    (requested ?? entry.load())
       .then((story) => {
         const errors = validateStory(story).filter((i) => i.level === 'error');
         if (errors.length > 0) return setLoad({ kind: 'error', message: 'This story has errors and cannot be played.' });
-        setLoad({ kind: 'ready', ...resume(story) });
+        if (!requested && save && !save.ended) {
+          return setLoad({
+            kind: 'ready',
+            story,
+            notice: `This build does not include ${story.title} v${save.storyVersion}. The save is preserved for export. Starting v${story.version} will replace it.`,
+          });
+        }
+        setLoad({ kind: 'ready', ...resume(story, save) });
       })
       .catch(() => setLoad({ kind: 'error', message: "The story couldn't be loaded. Check your connection and try again." }));
   }, [storyId]);
@@ -53,8 +62,7 @@ export function Reader({ storyId }: { storyId: string }) {
 }
 
 /** Rebuild the saved run by replaying its choices. A save from another story version can't be trusted. */
-function resume(story: Story): { story: Story; run?: RunState; notice?: string } {
-  const save = loadSave(story.id);
+function resume(story: Story, save = loadSave(story.id)): { story: Story; run?: RunState; notice?: string } {
   if (!save || save.ended) return { story };
   if (save.storyVersion === story.version && save.rulesVersion === story.rulesVersion) {
     try {
