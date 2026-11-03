@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { validateStory } from './validate';
 import { testStory } from './test-story';
 import type { Story } from './types';
+import { ENGINE_LIMITS } from './limits';
 
 const edit = (change: (s: Story) => void): Story => {
   const copy = structuredClone(testStory);
@@ -150,6 +151,17 @@ describe('validateStory', () => {
       'error: scenes.hostel.ending.title: Ending title is required',
       'error: scenes.hostel.ending.tone: Ending tone must be good, neutral, or bad',
       'error: scenes.curb.choices.store.label: Choice label is required',
+    ]));
+  });
+
+  it('enforces authored content size limits', () => {
+    const story = edit((s) => {
+      s.scenes.curb!.text = 'x'.repeat(ENGINE_LIMITS.maxSceneTextLength + 1);
+      s.scenes.curb!.choices![0]!.label = 'x'.repeat(ENGINE_LIMITS.maxLabelLength + 1);
+    });
+    expect(messages(story)).toEqual(expect.arrayContaining([
+      `error: scenes.curb.text: Scene text cannot exceed ${ENGINE_LIMITS.maxSceneTextLength} characters`,
+      `error: scenes.curb.choices.store.label: Choice label cannot exceed ${ENGINE_LIMITS.maxLabelLength} characters`,
     ]));
   });
 });

@@ -20,6 +20,7 @@ The first contract slice was implemented on 2026-11-02:
 - The story catalog resolves saves against an exact retained immutable version. If a build no longer carries that version, the save remains exportable and the reader explains that starting the latest version will replace it.
 - The read-only story map can trace one canonical route to any reachable ending. It highlights the passages and edges and shows the engine-produced final stats, inventory, flags, and ordered choices.
 - Authored/imported JSON passes through a bounded runtime parser before it reaches typed validation or the engine. Malformed nested data produces path-specific format errors instead of uncontrolled property/type failures.
+- Shared engine limits bound scene count, choices per scene, prose/label size, condition depth, and accepted choice history. Parser, validator, saves, replay, and transitions apply the same limits.
 - "New Town" now exercises the contract directly: the Route 9 flyer is an inventory item, and a composed requirement accepts either that flyer or Dev's referral for day labor.
 
 Current ID decision: scene IDs are unique within a story; choice IDs are unique within a scene. A choice event is resolved sequentially from the current scene, so the stable reference is the `(sceneId, choiceId)` pair even though compact saves store the ordered choice IDs. Published story versions are immutable, which makes the compact history unambiguous during replay. Revisit the serialized history shape before external APIs or datasets need independently addressable events.

@@ -1,4 +1,5 @@
 import type { Choice, ChoiceView, Condition, RunState, Scene, StatDef, Story, TransitionEvent, TransitionResult } from './types';
+import { ENGINE_LIMITS } from './limits';
 
 export const RUN_SCHEMA_VERSION = 1 as const;
 export const RULES_VERSION = 1 as const;
@@ -43,11 +44,12 @@ export function sceneText(story: Story, state: RunState): string {
   return getScene(story, state.sceneId).text.replaceAll('{name}', state.playerName);
 }
 
-export function checkCondition(condition: Condition, state: RunState): boolean {
+export function checkCondition(condition: Condition, state: RunState, depth = 0): boolean {
+  if (depth > ENGINE_LIMITS.maxConditionDepth) throw new Error('Condition nesting exceeds engine limit');
   if ('flag' in condition) return (state.flags[condition.flag] ?? false) === condition.is;
-  if ('all' in condition) return condition.all.every((child) => checkCondition(child, state));
-  if ('any' in condition) return condition.any.some((child) => checkCondition(child, state));
-  if ('not' in condition) return !checkCondition(condition.not, state);
+  if ('all' in condition) return condition.all.every((child) => checkCondition(child, state, depth + 1));
+  if ('any' in condition) return condition.any.some((child) => checkCondition(child, state, depth + 1));
+  if ('not' in condition) return !checkCondition(condition.not, state, depth + 1);
   const value = 'stat' in condition ? (state.stats[condition.stat] ?? 0) : (state.inventory[condition.item] ?? 0);
   if (condition.gte !== undefined && value < condition.gte) return false;
   if (condition.lte !== undefined && value > condition.lte) return false;
@@ -82,6 +84,10 @@ export function transition(story: Story, state: RunState, choiceId: string): Tra
     throw new IllegalChoiceError(
       `Run is for ${state.storyId} v${state.storyVersion}, not ${story.id} v${story.version}`,
     );
+  }
+  if (state.revision !== state.history.length) throw new IllegalChoiceError('Run revision does not match its history');
+  if (state.revision >= ENGINE_LIMITS.maxHistoryLength) {
+    throw new IllegalChoiceError(`Run exceeds the ${ENGINE_LIMITS.maxHistoryLength}-choice limit`);
   }
   if (state.ended) throw new IllegalChoiceError('The story has ended');
   const view = choiceViews(story, state).find((v) => v.choice.id === choiceId);

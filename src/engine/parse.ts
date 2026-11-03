@@ -1,5 +1,6 @@
 import type { Condition, Story } from './types';
 import { validateStory } from './validate';
+import { ENGINE_LIMITS } from './limits';
 
 export class StoryFormatError extends Error {
   constructor(public readonly problems: string[]) {
@@ -45,6 +46,9 @@ export function parseStory(value: unknown): Story {
   if (!isRecord(value.scenes)) {
     problem('scenes', 'must be an object');
   } else {
+    if (Object.keys(value.scenes).length > ENGINE_LIMITS.maxScenes) {
+      problem('scenes', `cannot contain more than ${ENGINE_LIMITS.maxScenes} scenes`);
+    }
     for (const [sceneId, sceneValue] of Object.entries(value.scenes)) {
       const path = `scenes.${sceneId}`;
       if (!isRecord(sceneValue)) {
@@ -76,6 +80,9 @@ function validateEnding(value: unknown, path: string, problem: Problem) {
 
 function validateChoices(value: unknown, path: string, problem: Problem) {
   if (!Array.isArray(value)) return problem(path, 'must be an array');
+  if (value.length > ENGINE_LIMITS.maxChoicesPerScene) {
+    problem(path, `cannot contain more than ${ENGINE_LIMITS.maxChoicesPerScene} choices`);
+  }
   value.forEach((choice, index) => {
     const at = `${path}[${index}]`;
     if (!isRecord(choice)) return problem(at, 'must be an object');
@@ -95,8 +102,8 @@ function validateChoices(value: unknown, path: string, problem: Problem) {
 }
 
 function validateCondition(value: unknown, path: string, problem: Problem, depth: number): value is Condition {
-  if (depth > 20) {
-    problem(path, 'condition nesting exceeds 20 levels');
+  if (depth > ENGINE_LIMITS.maxConditionDepth) {
+    problem(path, `condition nesting exceeds ${ENGINE_LIMITS.maxConditionDepth} levels`);
     return false;
   }
   if (!isRecord(value)) {

@@ -1,4 +1,5 @@
 import type { Condition, Story } from './types';
+import { ENGINE_LIMITS } from './limits';
 
 export interface Issue {
   level: 'error' | 'warning';
@@ -30,6 +31,7 @@ export function validateStory(story: Story): Issue[] {
   if (!story.summary.trim()) error('summary', 'Summary is required');
   if (!Number.isInteger(story.version) || story.version < 1) error('version', 'Version must be a positive integer');
   if (!sceneIds.has(story.start)) error('start', `Start scene "${story.start}" does not exist`);
+  if (sceneIds.size > ENGINE_LIMITS.maxScenes) error('scenes', `Cannot contain more than ${ENGINE_LIMITS.maxScenes} scenes`);
 
   for (const [key, def] of Object.entries(story.stats)) {
     if (!validId(key)) error(`stats.${key}`, 'Stat id must use letters, numbers, underscores, or hyphens');
@@ -60,7 +62,11 @@ export function validateStory(story: Story): Issue[] {
     if (typeof initial !== 'boolean') error(`flags.${flag}`, 'Initial flag value must be boolean');
   }
 
-  const checkCondition = (c: Condition, at: string) => {
+  const checkCondition = (c: Condition, at: string, depth = 0) => {
+    if (depth > ENGINE_LIMITS.maxConditionDepth) {
+      error(at, `Condition nesting exceeds ${ENGINE_LIMITS.maxConditionDepth} levels`);
+      return;
+    }
     if ('flag' in c) {
       readFlags.push({ flag: c.flag, at });
       return;
@@ -68,11 +74,11 @@ export function validateStory(story: Story): Issue[] {
     if ('all' in c || 'any' in c) {
       const children = 'all' in c ? c.all : c.any;
       if (children.length === 0) error(at, 'Condition group cannot be empty');
-      children.forEach((child, i) => checkCondition(child, `${at}.${'all' in c ? 'all' : 'any'}[${i}]`));
+      children.forEach((child, i) => checkCondition(child, `${at}.${'all' in c ? 'all' : 'any'}[${i}]`, depth + 1));
       return;
     }
     if ('not' in c) {
-      checkCondition(c.not, `${at}.not`);
+      checkCondition(c.not, `${at}.not`, depth + 1);
       return;
     }
     const key = 'stat' in c ? c.stat : c.item;
@@ -89,7 +95,16 @@ export function validateStory(story: Story): Issue[] {
     const at = `scenes.${sceneId}`;
     if (!validId(sceneId)) error(at, 'Scene id must use letters, numbers, underscores, or hyphens');
     if (!scene.text.trim()) error(`${at}.text`, 'Scene text is required');
+    if (scene.text.length > ENGINE_LIMITS.maxSceneTextLength) {
+      error(`${at}.text`, `Scene text cannot exceed ${ENGINE_LIMITS.maxSceneTextLength} characters`);
+    }
+    if (scene.title && scene.title.length > ENGINE_LIMITS.maxLabelLength) {
+      error(`${at}.title`, `Scene title cannot exceed ${ENGINE_LIMITS.maxLabelLength} characters`);
+    }
     const choices = scene.choices ?? [];
+    if (choices.length > ENGINE_LIMITS.maxChoicesPerScene) {
+      error(`${at}.choices`, `Cannot contain more than ${ENGINE_LIMITS.maxChoicesPerScene} choices`);
+    }
     if (scene.ending && choices.length > 0) error(at, 'An ending scene cannot have choices');
     if (scene.ending) {
       const endingAt = `${at}.ending`;
@@ -107,6 +122,9 @@ export function validateStory(story: Story): Issue[] {
       const cAt = `${at}.choices.${choice.id}`;
       if (!validId(choice.id)) error(`${cAt}.id`, 'Choice id must use letters, numbers, underscores, or hyphens');
       if (!choice.label.trim()) error(`${cAt}.label`, 'Choice label is required');
+      if (choice.label.length > ENGINE_LIMITS.maxLabelLength) {
+        error(`${cAt}.label`, `Choice label cannot exceed ${ENGINE_LIMITS.maxLabelLength} characters`);
+      }
       if (seen.has(choice.id)) error(cAt, `Duplicate choice id "${choice.id}"`);
       seen.add(choice.id);
       if (!sceneIds.has(choice.to)) error(cAt, `Leads to missing scene "${choice.to}"`);

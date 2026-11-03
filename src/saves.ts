@@ -3,6 +3,7 @@
 // Storage can be missing or blocked (private windows), so every access is wrapped.
 
 import type { RunState, Story } from './engine';
+import { ENGINE_LIMITS } from './engine';
 
 export interface SaveFile {
   saveVersion: 1;
@@ -119,6 +120,7 @@ export function validateSaveFile(value: unknown): SaveFile | undefined {
   if (!Number.isInteger(value.storyVersion) || (value.storyVersion as number) < 1) return undefined;
   if (typeof value.playerName !== 'string' || value.playerName.length === 0 || value.playerName.length > 40) return undefined;
   if (!Array.isArray(value.history) || !value.history.every((id) => typeof id === 'string' && id.length > 0)) return undefined;
+  if (value.history.length > ENGINE_LIMITS.maxHistoryLength) return undefined;
   if (!Number.isInteger(revision) || revision !== value.history.length) return undefined;
   if (typeof value.sceneTitle !== 'string' || typeof value.ended !== 'boolean') return undefined;
   if (typeof value.updatedAt !== 'string' || !Number.isFinite(Date.parse(value.updatedAt))) return undefined;

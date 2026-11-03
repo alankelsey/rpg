@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseExport, validateSaveFile } from './saves';
+import { ENGINE_LIMITS } from './engine';
 
 const save = {
   saveVersion: 1,
@@ -29,6 +30,11 @@ describe('validateSaveFile', () => {
     expect(validateSaveFile({ ...save, revision: 1 })).toBeUndefined();
     expect(validateSaveFile({ ...save, history: ['store', 7] })).toBeUndefined();
     expect(validateSaveFile({ ...save, updatedAt: 'not-a-date' })).toBeUndefined();
+    expect(validateSaveFile({
+      ...save,
+      history: Array.from({ length: ENGINE_LIMITS.maxHistoryLength + 1 }, () => 'loop'),
+      revision: ENGINE_LIMITS.maxHistoryLength + 1,
+    })).toBeUndefined();
   });
 });
 

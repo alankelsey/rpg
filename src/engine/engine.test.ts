@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { IllegalChoiceError, applyChoice, checkCondition, choiceViews, explore, lockedChoicesSeen, lockedReason, replay, sceneText, simulateRoute, startRun, transition } from './engine';
+import { ENGINE_LIMITS } from './limits';
 import { testStory as story } from './test-story';
 
 describe('startRun', () => {
@@ -89,6 +90,17 @@ describe('applyChoice', () => {
     const changed = structuredClone(story);
     changed.scenes.curb!.choices![0]!.effects = { inventory: { key: -1 } };
     expect(() => transition(changed, startRun(changed, 'Mara'), 'store')).toThrow(/negative/);
+  });
+
+  it('rejects inconsistent or overlong run histories before applying a choice', () => {
+    const inconsistent = { ...startRun(story, 'Mara'), revision: 1 };
+    expect(() => transition(story, inconsistent, 'store')).toThrow(/revision/);
+    const full = {
+      ...startRun(story, 'Mara'),
+      revision: ENGINE_LIMITS.maxHistoryLength,
+      history: Array.from({ length: ENGINE_LIMITS.maxHistoryLength }, () => 'loop'),
+    };
+    expect(() => transition(story, full, 'store')).toThrow(/choice limit/);
   });
 });
 
