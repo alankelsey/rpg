@@ -42,7 +42,7 @@ Inputs read for this document:
 - **Front end:** Vite + React + TypeScript is the working default. Alternatives and tradeoffs are in [frontend-stack.md](frontend-stack.md).
 - **stat-lab:** `stat-lab.html` (character and story generation) and the local art tools in `tools/` stay in the repo under that name as a testing sandbox. They will become part of the game later, either integrated or rewritten.
 - **PHP prototype:** removed. The database it used no longer exists, so the old credentials in history need no action.
-- **Stage 1 scope:** the playable reader is the foundation, not the end of Stage 1. The read-only map and versioned engine/run/save contract in [engine-state-roadmap.md](engine-state-roadmap.md) are implemented. The next gate is manual review of the map and canonical ending-route preview at desktop and narrow widths. Then use the "New Town" graph to continue editing and connection experiments and navigate between the map, editor, and playable preview. Record the selected approach and rejected alternatives before building the production author workflow in Stage 2.
+- **Stage 1 scope:** the playable reader is the foundation, not the end of Stage 1. The read-only map, versioned engine/run/save contract in [engine-state-roadmap.md](engine-state-roadmap.md), and desktop/narrow visual acceptance are complete. Next use the "New Town" graph to continue editing and connection experiments and navigate between the map, editor, and playable preview. Record the selected approach and rejected alternatives before building the production author workflow in Stage 2.
 
 ## 2. What exists today in this repo
 

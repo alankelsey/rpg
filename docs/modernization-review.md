@@ -181,7 +181,7 @@ These are planning judgments, not estimates derived from team velocity. For one 
 
 ### Stage 1 experimentation scope
 
-The playable "New Town" adventure and read-only map establish the initial foundation, but do not close Stage 1. The [engine and state roadmap](engine-state-roadmap.md) implementation gate is complete; authoring controls can now target its tested rules contract. Manually review the map and canonical ending-route preview at desktop and narrow widths before adding editor controls. The remaining structure work is intentionally experimental: build enough to compare approaches and learn what the production author workflow needs. The source concepts come from [RPG and Choose Your Own Adventure Components.docx](RPG%20and%20Choose%20Your%20Own%20Adventure%20Components.docx).
+The playable "New Town" adventure and read-only map establish the initial foundation, but do not close Stage 1. The [engine and state roadmap](engine-state-roadmap.md) implementation gate and desktop/narrow visual acceptance are complete; authoring controls can now target its tested rules contract. The remaining structure work is intentionally experimental: build enough to compare approaches and learn what the production author workflow needs. The source concepts come from [RPG and Choose Your Own Adventure Components.docx](RPG%20and%20Choose%20Your%20Own%20Adventure%20Components.docx).
 
 With the engine/state gate complete, the remaining Stage 1 experiments must cover:
 

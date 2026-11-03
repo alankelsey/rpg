@@ -1,6 +1,6 @@
 # Stage 1 story-map viewer experiment
 
-Status: implemented prototype with canonical ending-route state preview, awaiting desktop/mobile review before editor work begins. The [engine and state implementation gate](engine-state-roadmap.md) is complete.
+Status: implemented and visually accepted at desktop and narrow widths. The [engine and state implementation gate](engine-state-roadmap.md) is complete; editor experiments can now begin.
 
 ## Question
 
@@ -38,3 +38,7 @@ Those belong to the editor iteration after this viewer is accepted.
 - Does tracing an ending route make the state-dependent path understandable without overwhelming the map?
 - Is left-to-right navigation comfortable at desktop and narrow widths?
 - Which viewer behaviors must carry into the editor iteration?
+
+## Review result (2026-11-03)
+
+Accepted as the baseline for editor experiments. `npm run test:visual` exercises a canonical ending route in installed Chrome at 1440×1000 and 390×844, asserts that the document does not overflow horizontally, and captures full-page screenshots for inspection. The review found and fixed a narrow/tablet intrinsic-width overflow. Keep the contained scrollable canvas, passage inspector, ending tones, route highlighting, and canonical state summary when adding editing controls. Choice labels should remain toggleable because dense branches overlap at the current prototype scale.

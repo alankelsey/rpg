@@ -1210,11 +1210,40 @@ button:disabled {
     padding: 1rem 0.75rem 2rem;
   }
 
+  .map-page .workspace-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .map-page .workspace-tabs a {
+    min-width: 0;
+    padding-inline: 0.45rem;
+    text-align: center;
+  }
+
+  .map-page .workspace-tabs a:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .map-page .reader-nav {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 0.5rem;
+  }
+
+  .map-page .reader-title {
+    min-width: 0;
+    text-align: center;
+  }
+
   .map-heading {
     display: block;
   }
 
   .map-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
     margin-top: 1rem;
   }
 
@@ -1265,8 +1294,14 @@ button:disabled {
 @media (max-width: 640px) {
   .workspace-tabs {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     margin-bottom: 1.5rem;
+  }
+
+  .workspace-tabs a {
+    min-width: 0;
+    padding-inline: 0.45rem;
+    text-align: center;
   }
 
   .workspace-tabs a:first-child {

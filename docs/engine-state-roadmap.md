@@ -1,6 +1,6 @@
 # Engine and state roadmap
 
-Status: implementation gate complete as of 2026-11-02. Manual visual review of the map route preview remains before broader editor UI work.
+Status: complete as of 2026-11-03, including desktop and narrow-width visual acceptance of the map route preview.
 
 ## Progress
 
@@ -27,7 +27,7 @@ Current ID decision: scene IDs are unique within a story; choice IDs are unique 
 
 The only deferred contract item is an explicit migration fixture when the next save or rules version is introduced; inventing a second format solely to test migration would add false complexity. Released story files must remain immutable and registered in the catalog while their saves are supported; removal uses the preserved-save behavior above rather than silently loading a different version.
 
-Manual follow-up: visually review the route highlighting and state panel at desktop and narrow widths. The local browser is disabled in the current Work environment, so this interaction has build/type coverage and canonical simulation tests but not screenshot-based acceptance in this session.
+Visual follow-up completed 2026-11-03 with `npm run test:visual` at 1440×1000 and 390×844. The smoke test verifies document containment, selects an ending, traces its canonical route, checks highlighted nodes and edges, and renders the final state panel. Full-page screenshots were also inspected at both widths. The narrow review exposed and fixed intrinsic-width overflow in the workspace navigation and map summary.
 
 The playable reader and read-only story map prove that the current JSON can drive both play and visualization. The next risk is the contract beneath those screens. Editing tools should not hard-code today's narrow state model and then require a rewrite when inventory, richer requirements, chapters, mini-games, or external influence are added.
 
