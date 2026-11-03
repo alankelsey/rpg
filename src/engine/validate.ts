@@ -19,28 +19,45 @@ export function validateStory(story: Story): Issue[] {
 
   const sceneIds = new Set(Object.keys(story.scenes));
   const flagIds = new Set(Object.keys(story.flags ?? {}));
+  const endingIds = new Map<string, string>();
   const setFlags = new Set<string>();
   const readFlags: { flag: string; at: string }[] = [];
 
   if (story.schemaVersion !== 1) error('schemaVersion', 'Only story schema version 1 is supported');
   if (story.rulesVersion !== 1) error('rulesVersion', 'Only rules version 1 is supported');
+  if (!validId(story.id)) error('id', 'Story id must use letters, numbers, underscores, or hyphens');
+  if (!story.title.trim()) error('title', 'Title is required');
+  if (!story.summary.trim()) error('summary', 'Summary is required');
   if (!Number.isInteger(story.version) || story.version < 1) error('version', 'Version must be a positive integer');
   if (!sceneIds.has(story.start)) error('start', `Start scene "${story.start}" does not exist`);
 
   for (const [key, def] of Object.entries(story.stats)) {
+    if (!validId(key)) error(`stats.${key}`, 'Stat id must use letters, numbers, underscores, or hyphens');
+    if (!def.label.trim()) error(`stats.${key}.label`, 'Stat label is required');
     if (!Number.isFinite(def.initial)) error(`stats.${key}.initial`, 'Initial value must be finite');
+    if (def.min !== undefined && !Number.isFinite(def.min)) error(`stats.${key}.min`, 'Minimum must be finite');
+    if (def.max !== undefined && !Number.isFinite(def.max)) error(`stats.${key}.max`, 'Maximum must be finite');
     if (def.min !== undefined && def.max !== undefined && def.min > def.max) {
       error(`stats.${key}`, 'min is greater than max');
     }
+    if (def.min !== undefined && def.initial < def.min) error(`stats.${key}.initial`, 'Initial value is below min');
+    if (def.max !== undefined && def.initial > def.max) error(`stats.${key}.initial`, 'Initial value is above max');
   }
 
   for (const [key, def] of Object.entries(story.items ?? {})) {
+    if (!validId(key)) error(`items.${key}`, 'Item id must use letters, numbers, underscores, or hyphens');
+    if (!def.label.trim()) error(`items.${key}.label`, 'Item label is required');
     if (!Number.isInteger(def.initial ?? 0) || (def.initial ?? 0) < 0) {
       error(`items.${key}.initial`, 'Initial quantity must be a non-negative integer');
     }
     if (def.max !== undefined && (!Number.isInteger(def.max) || def.max < 0 || def.max < (def.initial ?? 0))) {
       error(`items.${key}.max`, 'Maximum quantity must be an integer at least as large as the initial quantity');
     }
+  }
+
+  for (const [flag, initial] of Object.entries(story.flags ?? {})) {
+    if (!validId(flag)) error(`flags.${flag}`, 'Flag id must use letters, numbers, underscores, or hyphens');
+    if (typeof initial !== 'boolean') error(`flags.${flag}`, 'Initial flag value must be boolean');
   }
 
   const checkCondition = (c: Condition, at: string) => {
@@ -70,13 +87,26 @@ export function validateStory(story: Story): Issue[] {
 
   for (const [sceneId, scene] of Object.entries(story.scenes)) {
     const at = `scenes.${sceneId}`;
+    if (!validId(sceneId)) error(at, 'Scene id must use letters, numbers, underscores, or hyphens');
+    if (!scene.text.trim()) error(`${at}.text`, 'Scene text is required');
     const choices = scene.choices ?? [];
     if (scene.ending && choices.length > 0) error(at, 'An ending scene cannot have choices');
+    if (scene.ending) {
+      const endingAt = `${at}.ending`;
+      if (!validId(scene.ending.id)) error(`${endingAt}.id`, 'Ending id must use letters, numbers, underscores, or hyphens');
+      if (!scene.ending.title.trim()) error(`${endingAt}.title`, 'Ending title is required');
+      if (!['good', 'neutral', 'bad'].includes(scene.ending.tone)) error(`${endingAt}.tone`, 'Ending tone must be good, neutral, or bad');
+      const previous = endingIds.get(scene.ending.id);
+      if (previous) error(`${endingAt}.id`, `Duplicate ending id "${scene.ending.id}" also used by scene "${previous}"`);
+      else endingIds.set(scene.ending.id, sceneId);
+    }
     if (!scene.ending && choices.length === 0) error(at, 'Dead end: no choices and not marked as an ending');
 
     const seen = new Set<string>();
     for (const choice of choices) {
       const cAt = `${at}.choices.${choice.id}`;
+      if (!validId(choice.id)) error(`${cAt}.id`, 'Choice id must use letters, numbers, underscores, or hyphens');
+      if (!choice.label.trim()) error(`${cAt}.label`, 'Choice label is required');
       if (seen.has(choice.id)) error(cAt, `Duplicate choice id "${choice.id}"`);
       seen.add(choice.id);
       if (!sceneIds.has(choice.to)) error(cAt, `Leads to missing scene "${choice.to}"`);
@@ -126,6 +156,10 @@ export function validateStory(story: Story): Issue[] {
   }
 
   return issues;
+}
+
+function validId(value: string): boolean {
+  return /^[A-Za-z0-9][A-Za-z0-9_-]*$/.test(value);
 }
 
 interface StructuralCycle {

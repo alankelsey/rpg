@@ -119,4 +119,37 @@ describe('validateStory', () => {
     story.scenes.start!.choices![0]!.intentionalLoop = true;
     expect(messages(story)).not.toContain('warning: scenes.start: Cycle involving "start" has no intentionalLoop choice');
   });
+
+  it('rejects duplicate ending ids before reports collapse them', () => {
+    const story = edit((s) => {
+      s.scenes.rested!.ending!.id = s.scenes.hostel!.ending!.id;
+    });
+    expect(messages(story)).toContain(
+      'error: scenes.rested.ending.id: Duplicate ending id "hostel" also used by scene "hostel"',
+    );
+  });
+
+  it('validates identifiers, labels, initial bounds, flags, and ending metadata', () => {
+    const story = edit((s) => {
+      s.id = 'bad story id';
+      s.title = ' ';
+      s.stats.money!.initial = -1;
+      s.items!.key!.label = '';
+      s.flags = { 'bad flag': 'yes' as unknown as boolean };
+      s.scenes.hostel!.ending = { id: 'bad ending', title: '', tone: 'great' as 'good' };
+      s.scenes.curb!.choices![0]!.label = '';
+    });
+    expect(messages(story)).toEqual(expect.arrayContaining([
+      'error: id: Story id must use letters, numbers, underscores, or hyphens',
+      'error: title: Title is required',
+      'error: stats.money.initial: Initial value is below min',
+      'error: items.key.label: Item label is required',
+      'error: flags.bad flag: Flag id must use letters, numbers, underscores, or hyphens',
+      'error: flags.bad flag: Initial flag value must be boolean',
+      'error: scenes.hostel.ending.id: Ending id must use letters, numbers, underscores, or hyphens',
+      'error: scenes.hostel.ending.title: Ending title is required',
+      'error: scenes.hostel.ending.tone: Ending tone must be good, neutral, or bad',
+      'error: scenes.curb.choices.store.label: Choice label is required',
+    ]));
+  });
 });
