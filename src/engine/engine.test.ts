@@ -160,7 +160,25 @@ describe('explore', () => {
     };
     loop.start = 'start';
     const report = explore(loop, 10);
-    expect(report.cycles).toEqual([{ sceneId: 'start', choiceId: 'again', history: ['again'] }]);
+    expect(report.cycles).toEqual([{ sceneId: 'start', choiceId: 'again', history: ['again'], intentional: false }]);
     expect(report.truncated).toBe(false);
+  });
+
+  it('reports why a reachable non-ending state is blocked', () => {
+    const blocked = structuredClone(story);
+    blocked.scenes = {
+      start: {
+        text: 'Blocked.',
+        choices: [{ id: 'door', label: 'Open the door', to: 'done', requires: [{ item: 'key', gte: 1 }] }],
+      },
+      done: { text: 'Done.', ending: { id: 'done', title: 'Done', tone: 'good' } },
+    };
+    blocked.start = 'start';
+    const report = explore(blocked, 10);
+    expect(report.stuck).toEqual([{
+      sceneId: 'start',
+      history: [],
+      locked: [{ choiceId: 'door', failed: [{ item: 'key', gte: 1 }] }],
+    }]);
   });
 });

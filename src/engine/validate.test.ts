@@ -106,4 +106,17 @@ describe('validateStory', () => {
     });
     expect(messages(story)).toContain('error: scenes: No ending is reachable');
   });
+
+  it('warns about an unmarked structural cycle and accepts an intentional one', () => {
+    const story = edit((s) => {
+      s.scenes = {
+        start: { text: 'Loop.', choices: [{ id: 'again', label: 'Again', to: 'start' }, { id: 'done', label: 'Done', to: 'done' }] },
+        done: { text: 'Done.', ending: { id: 'done', title: 'Done', tone: 'neutral' } },
+      };
+      s.start = 'start';
+    });
+    expect(messages(story)).toContain('warning: scenes.start: Cycle involving "start" has no intentionalLoop choice');
+    story.scenes.start!.choices![0]!.intentionalLoop = true;
+    expect(messages(story)).not.toContain('warning: scenes.start: Cycle involving "start" has no intentionalLoop choice');
+  });
 });

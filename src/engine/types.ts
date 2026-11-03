@@ -48,6 +48,8 @@ export interface Choice {
   /** Positive amounts that must be available and are spent atomically when accepted. */
   costs?: Record<string, number>;
   effects?: Effects;
+  /** Marks that this edge deliberately participates in a repeatable story cycle. */
+  intentionalLoop?: boolean;
   /**
    * Locked choices are shown disabled by default, so players see paths to try on a replay.
    * Set this to hide the choice instead (for secrets).

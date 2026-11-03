@@ -15,12 +15,13 @@ The first contract slice was implemented on 2026-11-02:
 - Save/import validation checks every persisted field, revision/history consistency, supported versions, and endings. Existing unversioned local saves are migrated from their history.
 - Exploration state identity includes inventory, and the story map renders the expanded condition/effect language.
 - Canonical route simulation exposes every transition for later map/editor previews, and exploration reports transitions that cycle back to an already visited gameplay state.
+- Story validation finds structural cycles and requires an explicit `intentionalLoop` marker within each cyclic component. Exploration identifies whether an observed runtime cycle was marked and reports the failed conditions behind blocked non-ending states.
 - An incompatible save is preserved for export instead of being deleted automatically.
 - "New Town" now exercises the contract directly: the Route 9 flyer is an inventory item, and a composed requirement accepts either that flyer or Dev's referral for day labor.
 
 Current ID decision: scene IDs are unique within a story; choice IDs are unique within a scene. A choice event is resolved sequentially from the current scene, so the stable reference is the `(sceneId, choiceId)` pair even though compact saves store the ordered choice IDs. Published story versions are immutable, which makes the compact history unambiguous during replay. Revisit the serialized history shape before external APIs or datasets need independently addressable events.
 
-Remaining gate work includes making route simulation selectable in the existing map, distinguishing intentional authored cycles from accidental ones, defining how unavailable historical story versions are packaged and restored, and adding an explicit migration fixture when the next save or rules version is introduced.
+Remaining gate work includes making route simulation selectable in the existing map, defining how unavailable historical story versions are packaged and restored, and adding an explicit migration fixture when the next save or rules version is introduced.
 
 The playable reader and read-only story map prove that the current JSON can drive both play and visualization. The next risk is the contract beneath those screens. Editing tools should not hard-code today's narrow state model and then require a rewrite when inventory, richer requirements, chapters, mini-games, or external influence are added.
 

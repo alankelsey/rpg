@@ -30,7 +30,7 @@ export const testStory: Story = {
     store: {
       text: 'You are hungry.',
       choices: [
-        { id: 'mnms', label: 'Peanut M&Ms', to: 'curb', costs: { money: 3 }, effects: { stats: { energy: 15, junkMeals: 1 } } },
+        { id: 'mnms', label: 'Peanut M&Ms', to: 'curb', costs: { money: 3 }, effects: { stats: { energy: 15, junkMeals: 1 } }, intentionalLoop: true },
         { id: 'jerky', label: 'Jerky', to: 'curb', costs: { money: 6 }, effects: { stats: { health: 5 } } },
       ],
     },
@@ -38,7 +38,7 @@ export const testStory: Story = {
       text: 'A hotel, and a hostel across the street. Someone drops their groceries.',
       choices: [
         { id: 'hotel', label: 'Go to the hotel', to: 'hotel' },
-        { id: 'help', label: 'Help pick them up', to: 'street', effects: { stats: { kindness: 10 }, flags: { helped: true } } },
+        { id: 'help', label: 'Help pick them up', to: 'street', effects: { stats: { kindness: 10 }, flags: { helped: true } }, intentionalLoop: true },
         {
           id: 'thank',
           label: 'Accept their thanks',

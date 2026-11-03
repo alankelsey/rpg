@@ -119,7 +119,71 @@ export function validateStory(story: Story): Issue[] {
     if (![...reachable].some((id) => story.scenes[id]?.ending)) error('scenes', 'No ending is reachable');
   }
 
+  for (const cycle of structuralCycles(story)) {
+    if (!cycle.intentional) {
+      warn(`scenes.${cycle.scenes[0]}`, `Cycle involving ${cycle.scenes.map((id) => `"${id}"`).join(', ')} has no intentionalLoop choice`);
+    }
+  }
+
   return issues;
+}
+
+interface StructuralCycle {
+  scenes: string[];
+  intentional: boolean;
+}
+
+/** Strongly connected scene groups represent structural cycles, independent of runtime conditions. */
+function structuralCycles(story: Story): StructuralCycle[] {
+  const ids = Object.keys(story.scenes);
+  const adjacency = (id: string) => (story.scenes[id]?.choices ?? []).map((choice) => choice.to).filter((to) => to in story.scenes);
+  const indexById = new Map<string, number>();
+  const lowById = new Map<string, number>();
+  const stack: string[] = [];
+  const onStack = new Set<string>();
+  const components: string[][] = [];
+  let index = 0;
+
+  const visit = (id: string) => {
+    indexById.set(id, index);
+    lowById.set(id, index);
+    index++;
+    stack.push(id);
+    onStack.add(id);
+
+    for (const to of adjacency(id)) {
+      if (!indexById.has(to)) {
+        visit(to);
+        lowById.set(id, Math.min(lowById.get(id)!, lowById.get(to)!));
+      } else if (onStack.has(to)) {
+        lowById.set(id, Math.min(lowById.get(id)!, indexById.get(to)!));
+      }
+    }
+
+    if (lowById.get(id) === indexById.get(id)) {
+      const component: string[] = [];
+      let member: string;
+      do {
+        member = stack.pop()!;
+        onStack.delete(member);
+        component.push(member);
+      } while (member !== id);
+      components.push(component.sort());
+    }
+  };
+
+  ids.forEach((id) => {
+    if (!indexById.has(id)) visit(id);
+  });
+
+  return components.flatMap((scenes) => {
+    const members = new Set(scenes);
+    const internalEdges = scenes.flatMap((from) =>
+      (story.scenes[from]?.choices ?? []).filter((choice) => members.has(choice.to)).map((choice) => ({ from, choice })),
+    );
+    const isCycle = scenes.length > 1 || internalEdges.some(({ from, choice }) => from === choice.to);
+    return isCycle ? [{ scenes, intentional: internalEdges.some(({ choice }) => choice.intentionalLoop === true) }] : [];
+  });
 }
 
 function conditionNeedsHint(story: Story, condition: Condition): boolean {

@@ -207,11 +207,15 @@ export interface ExploreReport {
   /** Ending id -> one choice history that reaches it. */
   endings: Map<string, string[]>;
   /** States with no available choice that aren't endings. */
-  stuck: { sceneId: string; history: string[] }[];
+  stuck: {
+    sceneId: string;
+    history: string[];
+    locked: { choiceId: string; failed: Condition[] }[];
+  }[];
   /** `sceneId/choiceId` for choices that were never available in any explored state. */
   neverAvailable: string[];
   /** Transitions that return to a gameplay state already explored. */
-  cycles: { sceneId: string; choiceId: string; history: string[] }[];
+  cycles: { sceneId: string; choiceId: string; history: string[]; intentional: boolean }[];
   statesVisited: number;
   /** True when maxStates was hit before every state was explored. */
   truncated: boolean;
@@ -243,8 +247,15 @@ export function explore(story: Story, maxStates = 20000): ExploreReport {
       if (!endings.has(ending.id)) endings.set(ending.id, state.history);
       continue;
     }
-    const open = choiceViews(story, state).filter((v) => v.available);
-    if (open.length === 0) stuck.push({ sceneId: state.sceneId, history: state.history });
+    const views = choiceViews(story, state);
+    const open = views.filter((v) => v.available);
+    if (open.length === 0) {
+      stuck.push({
+        sceneId: state.sceneId,
+        history: state.history,
+        locked: views.filter((view) => !view.available).map((view) => ({ choiceId: view.choice.id, failed: view.failed })),
+      });
+    }
     for (const view of open) {
       everAvailable.add(`${state.sceneId}/${view.choice.id}`);
       const next = applyChoice(story, state, view.choice.id);
@@ -253,7 +264,12 @@ export function explore(story: Story, maxStates = 20000): ExploreReport {
         const cycleKey = `${state.sceneId}/${view.choice.id}/${nextKey}`;
         if (!cycleKeys.has(cycleKey)) {
           cycleKeys.add(cycleKey);
-          cycles.push({ sceneId: state.sceneId, choiceId: view.choice.id, history: next.history });
+          cycles.push({
+            sceneId: state.sceneId,
+            choiceId: view.choice.id,
+            history: next.history,
+            intentional: view.choice.intentionalLoop === true,
+          });
         }
       } else {
         stack.push(next);
