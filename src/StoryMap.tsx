@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { choiceViews, explore, formatStat, lockedReason, simulateRoute, validateStory, type Choice, type Condition, type Issue, type RouteSimulation, type Scene, type Story, type TransitionEvent } from './engine';
+import { choiceViews, explore, formatStat, lockedReason, simulateRoute, validateStory, type Choice, type Condition, type ExploreReport, type Issue, type RouteSimulation, type Scene, type Story, type TransitionEvent } from './engine';
 import { navigate } from './router';
 import { MAP_NODE_HEIGHT, MAP_NODE_WIDTH, layoutStory } from './story-map/layout';
 import { downloadStoryDraft, loadStoryDraft, readStoryDraftFile, saveStoryDraft } from './story-map/draft-store';
@@ -107,6 +107,14 @@ function MapView({ story: publishedStory }: { story: Story }) {
       setDraftStatus(error instanceof Error ? error.message : 'Draft import failed.');
     }
   };
+  const traceDraftRoute = (history: readonly string[]) => {
+    if (draftErrors.length > 0) return;
+    const route = simulateRoute(draft, 'Preview', history);
+    setStory(structuredClone(draft));
+    setPreviewHistory([...history]);
+    setSelectedId(route.final.sceneId);
+    setEditorSceneId(route.final.sceneId);
+  };
 
   return (
     <main className="map-page">
@@ -211,12 +219,12 @@ function MapView({ story: publishedStory }: { story: Story }) {
           onSelect={selectNode}
         />
       </div>
-      {editorOpen && <DraftEditor story={draft} sceneId={editorSceneId} issues={draftIssues} status={draftStatus} onSceneSelect={setEditorSceneId} onChange={updateDraft} onApply={applyDraft} onSave={() => setDraftStatus(saveStoryDraft(publishedStory, draft) ?? 'Draft saved in this browser.')} onDownload={() => downloadStoryDraft(draft)} onImport={importDraft} />}
+      {editorOpen && <DraftEditor story={draft} sceneId={editorSceneId} issues={draftIssues} status={draftStatus} onSceneSelect={setEditorSceneId} onChange={updateDraft} onApply={applyDraft} onSave={() => setDraftStatus(saveStoryDraft(publishedStory, draft) ?? 'Draft saved in this browser.')} onDownload={() => downloadStoryDraft(draft)} onImport={importDraft} onTrace={traceDraftRoute} />}
     </main>
   );
 }
 
-function DraftEditor({ story, sceneId, issues, status, onSceneSelect, onChange, onApply, onSave, onDownload, onImport }: {
+function DraftEditor({ story, sceneId, issues, status, onSceneSelect, onChange, onApply, onSave, onDownload, onImport, onTrace }: {
   story: Story;
   sceneId: string;
   issues: Issue[];
@@ -227,15 +235,19 @@ function DraftEditor({ story, sceneId, issues, status, onSceneSelect, onChange, 
   onSave: () => void;
   onDownload: () => void;
   onImport: (file: File) => void;
+  onTrace: (history: readonly string[]) => void;
 }) {
   const [newSceneId, setNewSceneId] = useState('');
   const [newFlagId, setNewFlagId] = useState('');
   const [message, setMessage] = useState('');
   const importRef = useRef<HTMLInputElement | null>(null);
+  const [diagnostics, setDiagnostics] = useState<ExploreReport>();
+  useEffect(() => setDiagnostics(undefined), [story]);
+  const changeDraft = (next: Story) => { setDiagnostics(undefined); onChange(next); };
   const activeId = story.scenes[sceneId] ? sceneId : story.start;
   const scene = story.scenes[activeId]!;
   const errors = issues.filter((issue) => issue.level === 'error');
-  const updateScene = (next: Scene) => onChange({ ...story, scenes: { ...story.scenes, [activeId]: next } });
+  const updateScene = (next: Scene) => changeDraft({ ...story, scenes: { ...story.scenes, [activeId]: next } });
   const updateChoice = (id: string, patch: Partial<Choice>) => {
     updateScene({ ...scene, choices: (scene.choices ?? []).map((choice) => choice.id === id ? { ...choice, ...patch } : choice) });
   };
@@ -250,7 +262,7 @@ function DraftEditor({ story, sceneId, issues, status, onSceneSelect, onChange, 
       return;
     }
     const next: Scene = { title: id, text: 'Write this passage.', ending: { id, title: id, tone: 'neutral' } };
-    onChange({ ...story, scenes: { ...story.scenes, [id]: next } });
+    changeDraft({ ...story, scenes: { ...story.scenes, [id]: next } });
     onSceneSelect(id);
     setNewSceneId('');
     setMessage('New ending passage created. Connect an incoming choice to make it reachable.');
@@ -259,7 +271,7 @@ function DraftEditor({ story, sceneId, issues, status, onSceneSelect, onChange, 
     if (activeId === story.start || !window.confirm(`Remove passage “${scene.title ?? activeId}” from this draft? Incoming choices will need new destinations.`)) return;
     const nextScenes = { ...story.scenes };
     delete nextScenes[activeId];
-    onChange({ ...story, scenes: nextScenes });
+    changeDraft({ ...story, scenes: nextScenes });
     onSceneSelect(story.start);
     setMessage(`Passage “${activeId}” removed from the draft. Reconnect any incoming choices before applying.`);
   };
@@ -267,7 +279,7 @@ function DraftEditor({ story, sceneId, issues, status, onSceneSelect, onChange, 
     const id = newFlagId.trim();
     if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/.test(id)) return setMessage('Flag IDs use 1–64 letters, numbers, _ or -, starting with a letter or number.');
     if (Object.hasOwn(story.flags ?? {}, id)) return setMessage(`Flag “${id}” already exists.`);
-    onChange({ ...story, flags: { ...story.flags, [id]: false } });
+    changeDraft({ ...story, flags: { ...story.flags, [id]: false } });
     setNewFlagId('');
     setMessage(`Flag “${id}” added with an initial value of no.`);
   };
@@ -310,7 +322,7 @@ function DraftEditor({ story, sceneId, issues, status, onSceneSelect, onChange, 
           </div>
           <button type="button" className="draft-remove-passage" disabled={activeId === story.start} onClick={removeScene}>Remove selected passage</button>
           <div className="draft-create"><label htmlFor="draft-new-id">New passage ID</label><div><input id="draft-new-id" value={newSceneId} onChange={(event) => setNewSceneId(event.target.value)} placeholder="e.g. crossroads" /><button type="button" onClick={createScene}>Add passage</button></div>{message && <p role="status">{message}</p>}</div>
-          <div className="draft-flags"><h3>Starting flags</h3>{Object.entries(story.flags ?? {}).map(([id, value]) => <label key={id}><input type="checkbox" checked={value} onChange={(event) => onChange({ ...story, flags: { ...story.flags, [id]: event.target.checked } })} />{id}</label>)}<div><input aria-label="New flag ID" value={newFlagId} onChange={(event) => setNewFlagId(event.target.value)} placeholder="e.g. metGuide" /><button type="button" onClick={addFlag}>Add flag</button></div></div>
+          <div className="draft-flags"><h3>Starting flags</h3>{Object.entries(story.flags ?? {}).map(([id, value]) => <label key={id}><input type="checkbox" checked={value} onChange={(event) => changeDraft({ ...story, flags: { ...story.flags, [id]: event.target.checked } })} />{id}</label>)}<div><input aria-label="New flag ID" value={newFlagId} onChange={(event) => setNewFlagId(event.target.value)} placeholder="e.g. metGuide" /><button type="button" onClick={addFlag}>Add flag</button></div></div>
         </div>
         <div className="draft-choices">
           <div className="draft-choices-heading"><h3>Choices from {scene.title ?? activeId}</h3><button type="button" disabled={Boolean(scene.ending)} onClick={addChoice}>Add choice</button></div>
@@ -328,8 +340,19 @@ function DraftEditor({ story, sceneId, issues, status, onSceneSelect, onChange, 
         </div>
       </div>
       <div className="draft-issues" aria-live="polite"><h3>Validation</h3>{issues.length === 0 ? <p>Draft is valid.</p> : <ul>{issues.map((issue, index) => <li key={`${issue.at}/${index}`} className={`draft-issue-${issue.level}`}><strong>{issue.level}</strong> {issue.at}: {issue.message}</li>)}</ul>}</div>
+      <section className="draft-explorer" aria-labelledby="draft-explorer-heading"><div><h3 id="draft-explorer-heading">Path explorer</h3><button type="button" disabled={errors.length > 0} onClick={() => setDiagnostics(explore(story, 5000))}>Explore valid draft</button></div><p>Runs a bounded engine search from the opening. This supplements human playtesting.</p>{diagnostics && <ExplorerReport story={story} report={diagnostics} onTrace={onTrace} />}</section>
     </section>
   );
+}
+
+function ExplorerReport({ story, report, onTrace }: { story: Story; report: ExploreReport; onTrace: (history: readonly string[]) => void }) {
+  return <div className="explorer-report" aria-live="polite">
+    <p><strong>{report.endings.size}</strong> reachable endings · <strong>{report.statesVisited}</strong> states visited{report.truncated ? ' · search truncated at 5,000 states' : ''}</p>
+    <div className="explorer-endings"><strong>Ending routes</strong>{[...report.endings].map(([id, history]) => <button type="button" key={id} onClick={() => onTrace(history)}>{id} · {history.length} choices → trace on map</button>)}</div>
+    <div><strong>Blocked non-endings ({report.stuck.length})</strong>{report.stuck.length > 0 && <ul>{report.stuck.slice(0, 10).map((entry, index) => <li key={`${entry.sceneId}/${index}`}>{story.scenes[entry.sceneId]?.title ?? entry.sceneId} after {entry.history.length} choices{entry.locked.length > 0 ? ` · ${entry.locked.map((locked) => `${locked.choiceId}: ${locked.failed.map((condition) => describeCondition(story, condition)).join(', ')}`).join(' | ')}` : ''}</li>)}</ul>}</div>
+    <div><strong>Never available choices ({report.neverAvailable.length})</strong>{report.neverAvailable.length > 0 && <p>{report.neverAvailable.slice(0, 20).join(', ')}{report.neverAvailable.length > 20 ? '…' : ''}</p>}</div>
+    <div><strong>Cycles ({report.cycles.length})</strong>{report.cycles.length > 0 && <p>{report.cycles.slice(0, 10).map((cycle) => `${cycle.sceneId}/${cycle.choiceId}${cycle.intentional ? ' (intentional)' : ''}`).join(', ')}</p>}</div>
+  </div>;
 }
 
 function PassageInspector({

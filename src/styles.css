@@ -1333,6 +1333,17 @@ button:disabled {
 .draft-issues ul { display: grid; gap: 0.3rem; max-height: 12rem; overflow: auto; margin: 0.55rem 0 0; padding-left: 1.2rem; font: 0.76rem/1.4 system-ui, sans-serif; }
 .draft-issues li.draft-issue-error { color: var(--bad); }
 .draft-issues li.draft-issue-warning { color: var(--muted); }
+.draft-explorer { display: grid; gap: 0.45rem; margin-top: 1.2rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+.draft-explorer > div:first-child { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+.draft-explorer h3 { margin: 0; font: 700 1.05rem/1.3 Georgia, 'Iowan Old Style', serif; }
+.draft-explorer > p { margin: 0; color: var(--muted); font-size: 0.76rem; }
+.explorer-report { display: grid; gap: 0.8rem; padding: 0.85rem; border: 1px solid var(--border); border-radius: 7px; background: var(--bg); font: 0.75rem/1.4 system-ui, sans-serif; }
+.explorer-report p, .explorer-report ul { margin: 0.2rem 0 0; }
+.explorer-report ul { padding-left: 1.1rem; }
+.explorer-report > div { min-width: 0; overflow-wrap: anywhere; }
+.explorer-endings { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+.explorer-endings strong { width: 100%; }
+.explorer-endings button { padding: 0.4rem 0.55rem; font-size: 0.7rem; }
 
 @media (max-width: 1050px) {
   .draft-editor-grid { grid-template-columns: 1fr; }
