@@ -1289,6 +1289,11 @@ button:disabled {
 .draft-create > div { display: flex; gap: 0.5rem; }
 .draft-create > div input { min-width: 0; }
 .draft-create > p { margin: 0.4rem 0; color: var(--muted); font-size: 0.75rem; }
+.draft-flags { display: grid; gap: 0.35rem; margin-top: 1.1rem; padding-top: 0.8rem; border-top: 1px solid var(--border); }
+.draft-flags h3 { margin: 0; font: 700 1rem/1.3 Georgia, 'Iowan Old Style', serif; }
+.draft-flags label { display: flex; align-items: center; gap: 0.45rem; font: 0.76rem/1.3 system-ui, sans-serif; }
+.draft-flags > div { display: flex; gap: 0.5rem; margin-top: 0.4rem; }
+.draft-flags > div input { min-width: 0; }
 .draft-choices-heading h3, .draft-issues h3 { margin: 0; font: 700 1.05rem/1.3 Georgia, 'Iowan Old Style', serif; }
 .draft-choice-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 0.45rem 0.6rem; align-items: end; margin-top: 0.6rem; padding: 0.7rem; border: 1px solid var(--border); border-radius: 7px; }
 .draft-choice-id { grid-column: 1 / -1; color: var(--muted); font: 700 0.7rem/1.3 ui-monospace, monospace; }
@@ -1296,6 +1301,32 @@ button:disabled {
 .draft-choice-row label input, .draft-choice-row label select { margin-top: 0.25rem; }
 .draft-choice-row button { align-self: end; }
 .draft-choice-row small { grid-column: 1 / -1; color: var(--muted); font-size: 0.7rem; }
+.choice-rule-editor { grid-column: 1 / -1; padding-top: 0.5rem; border-top: 1px solid var(--border); font: 0.75rem/1.4 system-ui, sans-serif; }
+.choice-rule-editor summary { cursor: pointer; color: var(--accent); font-weight: 700; }
+.choice-rule-editor[open] { display: grid; gap: 0.9rem; }
+.rule-editor-group { display: grid; gap: 0.45rem; }
+.rule-editor-group-heading, .rule-add-buttons { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+.rule-editor-group-heading strong { margin-right: auto; }
+.rule-editor-group button, .requirement-row button, .rule-add-buttons button { padding: 0.35rem 0.5rem; font-size: 0.7rem; }
+.rule-editor-group p { margin: 0; color: var(--muted); font-size: 0.68rem; }
+.rule-editor-row { display: grid; grid-template-columns: minmax(5rem, 1fr) minmax(5rem, 7rem) auto; align-items: center; gap: 0.35rem; }
+.rule-editor-row input, .rule-editor-row select, .requirement-row input, .requirement-row select, .rule-editor-hint input { width: 100%; min-width: 0; padding: 0.4rem; border: 1px solid var(--border); border-radius: 5px; background: var(--surface); color: var(--text); }
+.requirement-row { display: grid; grid-template-columns: auto minmax(5rem, 1fr) minmax(3rem, 5rem) minmax(3rem, 5rem) auto; align-items: end; gap: 0.35rem; }
+.requirement-row label { margin: 0; font-size: 0.65rem; }
+.requirement-row label input { margin-top: 0.2rem; }
+.nested-condition { grid-column: 1 / 5; overflow-wrap: anywhere; font-size: 0.68rem; }
+.condition-control { display: grid; gap: 0.4rem; min-width: 0; padding: 0.55rem; border: 1px solid var(--border); border-radius: 6px; }
+.condition-toolbar { display: flex; justify-content: space-between; gap: 0.4rem; }
+.condition-toolbar select { width: auto; max-width: 9rem; }
+.condition-toolbar button, .condition-children > button { padding: 0.35rem 0.5rem; font-size: 0.7rem; }
+.condition-fields { display: grid; grid-template-columns: minmax(5rem, 1fr) minmax(3rem, 5rem) minmax(3rem, 5rem); align-items: end; gap: 0.35rem; }
+.condition-fields label { margin: 0; font-size: 0.65rem; }
+.condition-fields label input { margin-top: 0.2rem; }
+.condition-fields select { width: 100%; }
+.condition-children { display: grid; gap: 0.4rem; min-width: 0; margin-left: 0.65rem; padding-left: 0.55rem; border-left: 2px solid var(--border); }
+.condition-children > button { justify-self: start; }
+.rule-editor-hint { display: grid; gap: 0.3rem; font-weight: 700; }
+.rule-editor-check { display: flex; align-items: center; gap: 0.4rem; }
 .draft-choices > p { color: var(--muted); font-size: 0.8rem; }
 .draft-issues { margin-top: 1.3rem; padding-top: 1rem; border-top: 1px solid var(--border); }
 .draft-issues p { margin: 0.4rem 0 0; color: var(--good); font-size: 0.8rem; }
@@ -1390,6 +1421,12 @@ button:disabled {
   .draft-editor-heading, .draft-editor-actions { align-items: flex-start; flex-direction: column; }
   .draft-choice-row { grid-template-columns: 1fr; }
   .draft-choice-id, .draft-choice-row small { grid-column: auto; }
+  .choice-rule-editor { grid-column: auto; }
+  .requirement-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .requirement-row > span { grid-column: 1 / -1; }
+  .requirement-row button, .nested-condition { grid-column: 1 / -1; }
+  .condition-fields { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .condition-fields > select:first-child { grid-column: 1 / -1; }
 }
 
 @media (prefers-reduced-motion: reduce) {

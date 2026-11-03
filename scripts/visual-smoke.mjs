@@ -71,9 +71,12 @@ try {
       await page.locator('#draft-title').fill('Revised opening');
       await page.getByRole('button', { name: 'Apply valid draft to map' }).click();
       assert((await page.locator('.map-node').filter({ hasText: 'Revised opening' }).count()) > 0);
+      await page.locator('.draft-choice-row').first().locator('summary').click();
       const editorOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       assert.equal(editorOverflow, 0, `${review.name} editor overflows horizontally by ${editorOverflow}px`);
-      console.log(`${review.name}: ending route, simulation, and draft editor passed; screenshot ${screenshot}`);
+      const editorScreenshot = join(tmpdir(), `rpg-editor-${review.name}.png`);
+      await page.screenshot({ path: editorScreenshot, fullPage: true });
+      console.log(`${review.name}: ending route, simulation, and draft editor passed; screenshots ${screenshot}, ${editorScreenshot}`);
       await page.close();
     }
   } finally {

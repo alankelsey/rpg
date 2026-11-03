@@ -3,6 +3,7 @@ import { choiceViews, explore, formatStat, lockedReason, simulateRoute, validate
 import { navigate } from './router';
 import { MAP_NODE_HEIGHT, MAP_NODE_WIDTH, layoutStory } from './story-map/layout';
 import { downloadStoryDraft, loadStoryDraft, readStoryDraftFile, saveStoryDraft } from './story-map/draft-store';
+import { ChoiceRulesEditor } from './story-map/ChoiceRulesEditor';
 import { findStory } from './stories/catalog';
 import { WorkspaceNav } from './WorkspaceNav';
 
@@ -228,6 +229,7 @@ function DraftEditor({ story, sceneId, issues, status, onSceneSelect, onChange, 
   onImport: (file: File) => void;
 }) {
   const [newSceneId, setNewSceneId] = useState('');
+  const [newFlagId, setNewFlagId] = useState('');
   const [message, setMessage] = useState('');
   const importRef = useRef<HTMLInputElement | null>(null);
   const activeId = story.scenes[sceneId] ? sceneId : story.start;
@@ -260,6 +262,14 @@ function DraftEditor({ story, sceneId, issues, status, onSceneSelect, onChange, 
     onChange({ ...story, scenes: nextScenes });
     onSceneSelect(story.start);
     setMessage(`Passage “${activeId}” removed from the draft. Reconnect any incoming choices before applying.`);
+  };
+  const addFlag = () => {
+    const id = newFlagId.trim();
+    if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/.test(id)) return setMessage('Flag IDs use 1–64 letters, numbers, _ or -, starting with a letter or number.');
+    if (Object.hasOwn(story.flags ?? {}, id)) return setMessage(`Flag “${id}” already exists.`);
+    onChange({ ...story, flags: { ...story.flags, [id]: false } });
+    setNewFlagId('');
+    setMessage(`Flag “${id}” added with an initial value of no.`);
   };
   const addChoice = () => {
     const used = new Set((scene.choices ?? []).map((choice) => choice.id));
@@ -300,6 +310,7 @@ function DraftEditor({ story, sceneId, issues, status, onSceneSelect, onChange, 
           </div>
           <button type="button" className="draft-remove-passage" disabled={activeId === story.start} onClick={removeScene}>Remove selected passage</button>
           <div className="draft-create"><label htmlFor="draft-new-id">New passage ID</label><div><input id="draft-new-id" value={newSceneId} onChange={(event) => setNewSceneId(event.target.value)} placeholder="e.g. crossroads" /><button type="button" onClick={createScene}>Add passage</button></div>{message && <p role="status">{message}</p>}</div>
+          <div className="draft-flags"><h3>Starting flags</h3>{Object.entries(story.flags ?? {}).map(([id, value]) => <label key={id}><input type="checkbox" checked={value} onChange={(event) => onChange({ ...story, flags: { ...story.flags, [id]: event.target.checked } })} />{id}</label>)}<div><input aria-label="New flag ID" value={newFlagId} onChange={(event) => setNewFlagId(event.target.value)} placeholder="e.g. metGuide" /><button type="button" onClick={addFlag}>Add flag</button></div></div>
         </div>
         <div className="draft-choices">
           <div className="draft-choices-heading"><h3>Choices from {scene.title ?? activeId}</h3><button type="button" disabled={Boolean(scene.ending)} onClick={addChoice}>Add choice</button></div>
@@ -309,7 +320,7 @@ function DraftEditor({ story, sceneId, issues, status, onSceneSelect, onChange, 
               <label>Player-facing label<input value={choice.label} onChange={(event) => updateChoice(choice.id, { label: event.target.value })} /></label>
               <label>Destination<select value={choice.to} onChange={(event) => updateChoice(choice.id, { to: event.target.value })}>{Object.keys(story.scenes).map((id) => <option key={id} value={id}>{story.scenes[id]?.title ?? id} ({id})</option>)}</select></label>
               <button type="button" className="draft-remove" onClick={() => updateScene({ ...scene, choices: (scene.choices ?? []).filter((item) => item.id !== choice.id) })}>Remove choice</button>
-              {(choice.requires?.length || choice.costs || choice.effects) && <small>Requirements, costs, and effects are preserved. Their controls come in the later author workflow.</small>}
+              <ChoiceRulesEditor story={story} choice={choice} onChange={(patch) => updateChoice(choice.id, patch)} />
             </div>
           ))}
           {scene.ending && <p>This ending has no outgoing choices. Convert it to a passage to add one.</p>}
@@ -402,7 +413,7 @@ function RouteSimulator({ story, preview, onPreview, onAdvance }: {
           <p className="eyebrow">Engine-backed preview</p>
           <h3 id="route-simulator-heading">Route simulator</h3>
         </div>
-        {preview && <span className="simulator-count">{state?.revision} choices</span>}
+        {preview && <span className="simulator-count">{state?.revision} {state?.revision === 1 ? 'choice' : 'choices'}</span>}
       </div>
       {!preview ? (
         <>
@@ -468,7 +479,7 @@ function RouteState({ story, preview }: { story: Story; preview: RouteSimulation
   const flags = Object.entries(state.flags).filter(([, value]) => value);
   return (
     <div className="route-state">
-      <p><strong>Canonical state after {state.revision} choices</strong></p>
+      <p><strong>Canonical state after {state.revision} {state.revision === 1 ? 'choice' : 'choices'}</strong></p>
       <dl>
         {allStats.map(([id, value]) => <Rule key={id} label={`${story.stats[id]?.label ?? humanize(id)}${story.stats[id]?.hidden ? ' (hidden)' : ''}`} value={formatStat(story, id, value)} />)}
         {inventory.map(([id, quantity]) => <Rule key={id} label={story.items?.[id]?.label ?? humanize(id)} value={String(quantity)} />)}
