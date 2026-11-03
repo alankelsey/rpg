@@ -181,9 +181,9 @@ These are planning judgments, not estimates derived from team velocity. For one 
 
 ### Stage 1 experimentation scope
 
-The playable "New Town" adventure and read-only map establish the initial foundation, but do not close Stage 1. Before adding more editor UI, complete the [engine and state roadmap](engine-state-roadmap.md) so authoring controls target a deliberate, tested rules contract. The remaining structure work is intentionally experimental: build enough to compare approaches and learn what the production author workflow needs. The source concepts come from [RPG and Choose Your Own Adventure Components.docx](RPG%20and%20Choose%20Your%20Own%20Adventure%20Components.docx).
+The playable "New Town" adventure and read-only map establish the initial foundation, but do not close Stage 1. The [engine and state roadmap](engine-state-roadmap.md) implementation gate is complete; authoring controls can now target its tested rules contract. Manually review the map and canonical ending-route preview at desktop and narrow widths before adding editor controls. The remaining structure work is intentionally experimental: build enough to compare approaches and learn what the production author workflow needs. The source concepts come from [RPG and Choose Your Own Adventure Components.docx](RPG%20and%20Choose%20Your%20Own%20Adventure%20Components.docx).
 
-After the engine/state gate, Stage 1 experiments must cover:
+With the engine/state gate complete, the remaining Stage 1 experiments must cover:
 
 1. **Branching structure viewer and editor.** Render passages as nodes and choices as directed edges. Try editing passages and choices without creating a second story representation that can drift from the playable JSON.
 2. **Connecting paths to passages.** Create, reconnect, and remove a choice edge; label it with the player-facing choice; support branches that split, rejoin at bottlenecks, or end early; report missing destinations.

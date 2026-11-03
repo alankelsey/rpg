@@ -16,7 +16,9 @@ Stage 1 experimentation covers:
 - State tracking that shows how stats, flags, requirements, and effects unlock or block later paths.
 - Navigation between the map, passage editor, and playable preview.
 
-The read-only map is the first completed structure experiment. Before building more editor UI, the next priority is to finish the engine and state contract: versioned run/save data, supported conditions and effects, deterministic transition results, strict import/replay validation, and state-aware path exploration. The detailed gate is in [docs/engine-state-roadmap.md](docs/engine-state-roadmap.md).
+The read-only map is the first completed structure experiment. The engine/state gate is also complete: versioned run/save data, inventory and composed requirements, explicit resource costs, deterministic transition events, strict story/save parsing, bounded replay and exploration, immutable story-version loading, cycle/blocked-state diagnostics, and canonical route simulation are implemented and tested. Details are in [docs/engine-state-roadmap.md](docs/engine-state-roadmap.md).
+
+The next Stage 1 gate is a manual desktop/mobile review of the story map and ending-route state preview. After that review, continue with passage/choice editing, reconnecting paths, draft persistence/export, and playable preview against the stable engine contract.
 
 Stage 1 is complete when the engine/state gate and structure experiments work against "New Town," the chosen approach and rejected alternatives are documented, all intended endings remain reachable, save/resume works exactly, and keyboard/mobile play and human playtesting pass. Stage 2 then turns the findings into a dependable private author workflow where another author can validate, preview, and publish a short story without changing engine code.
 

@@ -42,7 +42,7 @@ Inputs read for this document:
 - **Front end:** Vite + React + TypeScript is the working default. Alternatives and tradeoffs are in [frontend-stack.md](frontend-stack.md).
 - **stat-lab:** `stat-lab.html` (character and story generation) and the local art tools in `tools/` stay in the repo under that name as a testing sandbox. They will become part of the game later, either integrated or rewritten.
 - **PHP prototype:** removed. The database it used no longer exists, so the old credentials in history need no action.
-- **Stage 1 scope:** the playable reader is the foundation, not the end of Stage 1. The read-only map is the first structure experiment. Before investing in more editor UI, complete the versioned engine/run/save contract, condition and effect rules, deterministic transition results, import/replay validation, and state-aware exploration in [engine-state-roadmap.md](engine-state-roadmap.md). Then use the "New Town" graph to continue editing and connection experiments, visualize state-dependent routes to multiple endings, and navigate between the map, editor, and playable preview. Record the selected approach and rejected alternatives before building the production author workflow in Stage 2.
+- **Stage 1 scope:** the playable reader is the foundation, not the end of Stage 1. The read-only map and versioned engine/run/save contract in [engine-state-roadmap.md](engine-state-roadmap.md) are implemented. The next gate is manual review of the map and canonical ending-route preview at desktop and narrow widths. Then use the "New Town" graph to continue editing and connection experiments and navigate between the map, editor, and playable preview. Record the selected approach and rejected alternatives before building the production author workflow in Stage 2.
 
 ## 2. What exists today in this repo
 
@@ -369,7 +369,7 @@ Option B or E: static front end, browser-side engine, serverless API, DynamoDB o
 
 ## 11. Phasing sketch for the formal plan
 
-1. **Engine and format**: finish the versioned story/run/save contract, validator, deterministic transition/events API, stats and meta stats, supported checks/effects, strict replay/import, and state-aware exploration in [engine-state-roadmap.md](engine-state-roadmap.md). Keep it usable in browser and Node. Unit tests. No server.
+1. **Engine and format (implementation gate complete 2026-11-02)**: versioned story/run/save contract, runtime parser and validator, deterministic transition/events API, stats, meta stats, inventory, composed checks, explicit costs/effects, strict replay/import, bounded state-aware exploration, and immutable story-version loading are implemented in [engine-state-roadmap.md](engine-state-roadmap.md). The engine runs in browser and Node with no server.
 2. **Play**: static site with a story picker as the landing page ("continue" shown when a run is in progress). Loads a story version and plays it. One local save per story, so players can switch stories and resume. Chronicle at the end.
 3. **Accounts, persistence, submissions**: auth, playthrough checkpoint API, story publishing, versioning.
 4. **Community paths**: proposals, voting windows, moderation queue, merge to new version, author attribution.
