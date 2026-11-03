@@ -59,6 +59,20 @@ describe('validateStory', () => {
     );
   });
 
+  it('validates explicit costs and warns when a purchase is modeled as a clamped effect', () => {
+    const story = edit((s) => {
+      s.scenes.curb!.choices![0]!.costs = { cash: 5, money: 0 };
+      s.scenes.store!.choices![0]!.effects = { stats: { money: -3 } };
+    });
+    expect(messages(story)).toEqual(
+      expect.arrayContaining([
+        'error: scenes.curb.choices.store: Spends unknown stat "cash"',
+        'error: scenes.curb.choices.store: Cost for "money" must be a positive finite number',
+        'warning: scenes.store.choices.mnms: Negative money effect for "money" does not check affordability; use costs for a purchase',
+      ]),
+    );
+  });
+
   it('reports dead ends and endings with choices', () => {
     const story = edit((s) => {
       delete s.scenes.hostel!.ending;

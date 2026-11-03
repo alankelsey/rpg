@@ -30,8 +30,8 @@
       "title": "Day 1 · Aisle Three",
       "text": "You're hungry, and this store is the only thing open. You scan the aisles.\n\n\"Peanut M&M's?\" You keep looking. You've got nowhere to be. \"Or maybe this jerky?\"\n\nBetter just get one for now.",
       "choices": [
-        { "id": "mnms", "label": "Peanut M&M's ($3) · quick energy", "to": "counter", "effects": { "stats": { "money": -3, "energy": 15, "junkMeals": 1 } } },
-        { "id": "jerky", "label": "Beef jerky ($8) · keeps you going", "to": "counter", "effects": { "stats": { "money": -8, "health": 5, "energy": 5 } } },
+        { "id": "mnms", "label": "Peanut M&M's ($3) · quick energy", "to": "counter", "costs": { "money": 3 }, "effects": { "stats": { "energy": 15, "junkMeals": 1 } } },
+        { "id": "jerky", "label": "Beef jerky ($8) · keeps you going", "to": "counter", "costs": { "money": 8 }, "effects": { "stats": { "health": 5, "energy": 5 } } },
         { "id": "nothing", "label": "Save your money", "to": "counter", "effects": { "stats": { "energy": -5 } } }
       ]
     },
@@ -39,7 +39,7 @@
       "title": "Day 1 · The Counter",
       "text": "Ahead of you in line, an older woman in a flour-dusted apron counts coins onto the counter twice. She's four dollars short on a bag of sugar and a carton of eggs.\n\n\"I'll run home and come back,\" she tells the cashier, though she doesn't look like she wants to.",
       "choices": [
-        { "id": "cover", "label": "Cover the $4", "to": "curbEvening", "effects": { "stats": { "money": -4, "kindness": 15 }, "flags": { "helpedRosa": true } } },
+        { "id": "cover", "label": "Cover the $4", "to": "curbEvening", "costs": { "money": 4 }, "effects": { "stats": { "kindness": 15 }, "flags": { "helpedRosa": true } } },
         { "id": "wait", "label": "Wait your turn", "to": "curbEvening" }
       ]
     },
@@ -62,8 +62,8 @@
       "title": "Day 1 · Two Signs",
       "text": "The hotel is the real thing: brass doors, a doorman, $90 a night.\n\nDirectly across the street is a hostel. It looks clean, just not as upscale. $45 a night, shared room.\n\nThere's also a bench in the little park between them.",
       "choices": [
-        { "id": "hotel", "label": "The hotel ($90)", "to": "morning", "effects": { "stats": { "money": -90, "energy": 40, "health": 5 }, "flags": { "stayedHotel": true } } },
-        { "id": "hostel", "label": "The hostel ($45)", "to": "hostelNight", "effects": { "stats": { "money": -45, "energy": 25 } } },
+        { "id": "hotel", "label": "The hotel ($90)", "to": "morning", "costs": { "money": 90 }, "effects": { "stats": { "energy": 40, "health": 5 }, "flags": { "stayedHotel": true } } },
+        { "id": "hostel", "label": "The hostel ($45)", "to": "hostelNight", "costs": { "money": 45 }, "effects": { "stats": { "energy": 25 } } },
         { "id": "bench", "label": "The park bench (free)", "to": "morning", "effects": { "stats": { "energy": -15, "health": -10 } } }
       ]
     },
@@ -79,8 +79,8 @@
       "title": "Day 2 · Morning",
       "text": "Morning. The office opens at eight. You have time for breakfast if you want it.",
       "choices": [
-        { "id": "donut", "label": "Coffee and a donut ($4)", "to": "office", "effects": { "stats": { "money": -4, "energy": 10, "junkMeals": 1 } } },
-        { "id": "diner", "label": "Eggs at the diner ($12)", "to": "office", "effects": { "stats": { "money": -12, "energy": 15, "health": 5 } } },
+        { "id": "donut", "label": "Coffee and a donut ($4)", "to": "office", "costs": { "money": 4 }, "effects": { "stats": { "energy": 10, "junkMeals": 1 } } },
+        { "id": "diner", "label": "Eggs at the diner ($12)", "to": "office", "costs": { "money": 12 }, "effects": { "stats": { "energy": 15, "health": 5 } } },
         { "id": "skip", "label": "Skip it", "to": "office", "effects": { "stats": { "energy": -10 } } }
       ]
     },
@@ -159,22 +159,23 @@
       "title": "Days 2–7 · Pounding Pavement",
       "text": "You walk every street in town asking about work. You learn where everything is. Nobody's hiring.",
       "choices": [
-        { "id": "keep", "label": "Keep looking all week", "to": "weekStay", "effects": { "stats": { "money": -40, "energy": -10 } } }
+        { "id": "keep", "label": "Keep looking all week", "to": "weekStay", "costs": { "money": 40 }, "effects": { "stats": { "energy": -10 } } }
       ]
     },
     "weekStay": {
       "title": "The Rest of the Week",
       "text": "Work, or the lack of it, fills your days. You still need somewhere to sleep every night.",
       "choices": [
-        { "id": "hotel", "label": "The hotel all week ($630)", "to": "landlord", "effects": { "stats": { "money": -630, "energy": 20, "health": 5 } } },
-        { "id": "hostel", "label": "The hostel all week ($315)", "to": "landlord", "effects": { "stats": { "money": -315 } } },
+        { "id": "hotel", "label": "The hotel all week ($630)", "to": "landlord", "costs": { "money": 630 }, "effects": { "stats": { "energy": 20, "health": 5 } } },
+        { "id": "hostel", "label": "The hostel all week ($315)", "to": "landlord", "costs": { "money": 315 } },
         {
           "id": "bakeryRoom",
           "label": "The room above the bakery ($100)",
           "to": "landlord",
           "requires": [{ "flag": "roomAboveBakery", "is": true }],
           "lockedHint": "You'd need a landlord who already trusts you.",
-          "effects": { "stats": { "money": -100, "energy": 10 } }
+          "costs": { "money": 100 },
+          "effects": { "stats": { "energy": 10 } }
         },
         { "id": "park", "label": "The park bench (free)", "to": "landlord", "effects": { "stats": { "health": -20, "energy": -20 } } }
       ]
@@ -187,9 +188,9 @@
           "id": "lease",
           "label": "Sign the lease ($1,300)",
           "to": "keys",
-          "requires": [{ "stat": "money", "gte": 1300 }, { "flag": "hasJob", "is": true }],
+          "requires": [{ "flag": "hasJob", "is": true }],
           "lockedHint": "The landlord wants pay stubs from a real job.",
-          "effects": { "stats": { "money": -1300 } }
+          "costs": { "money": 1300 }
         },
         {
           "id": "stayRosa",
@@ -198,7 +199,7 @@
           "requires": [{ "flag": "roomAboveBakery", "is": true }],
           "lockedHint": "Rosa's spare room isn't offered to strangers."
         },
-        { "id": "weekly", "label": "Another week at the hostel ($315)", "to": "weekly", "requires": [{ "stat": "money", "gte": 315 }], "effects": { "stats": { "money": -315 } } },
+        { "id": "weekly", "label": "Another week at the hostel ($315)", "to": "weekly", "costs": { "money": 315 } },
         { "id": "bus", "label": "Buy a bus ticket out", "to": "bus" }
       ]
     },

@@ -183,9 +183,10 @@ function PassageInspector({
                 <span>{choice.label}</span>
                 <strong>→ {story.scenes[choice.to]?.title ?? choice.to}</strong>
               </button>
-              {(choice.requires?.length || choice.effects) && (
+              {(choice.requires?.length || choice.costs || choice.effects) && (
                 <dl className="choice-rules">
                   {choice.requires?.length ? <Rule label="Requires" value={choice.requires.map((condition) => describeCondition(story, condition)).join(' · ')} /> : null}
+                  {choice.costs ? <Rule label="Costs" value={describeCosts(story, choice)} /> : null}
                   {choice.effects ? <Rule label="Changes" value={describeEffects(story, choice)} /> : null}
                 </dl>
               )}
@@ -229,6 +230,13 @@ function describeEffects(story: Story, choice: Choice): string {
     return `${label} ${delta >= 0 ? '+' : '−'}${Math.abs(delta)}`;
   });
   return [...stats, ...flags, ...inventory].join(' · ');
+}
+
+function describeCosts(story: Story, choice: Choice): string {
+  return Object.entries(choice.costs ?? {}).map(([stat, amount]) => {
+    const label = story.stats[stat]?.label ?? humanize(stat);
+    return `${label} ${formatStat(story, stat, amount)}`;
+  }).join(' · ');
 }
 
 function humanize(value: string): string {

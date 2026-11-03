@@ -10,6 +10,7 @@ The first contract slice was implemented on 2026-11-02:
 - Runs include a monotonic revision and deterministic inventory state.
 - Conditions support stats, flags, inventory quantities, and nested `all`/`any`/`not` composition.
 - Effects support bounded stat deltas, flag assignment, and validated inventory deltas.
+- Resource costs are separate from ordinary stat effects. A cost automatically locks a choice when the player cannot afford it and is spent atomically on acceptance; ordinary negative effects remain available for damage or involuntary loss.
 - The canonical transition returns immutable state plus structured stat, flag, inventory, scene, and ending events. `applyChoice` remains a compatibility wrapper.
 - Save/import validation checks every persisted field, revision/history consistency, supported versions, and endings. Existing unversioned local saves are migrated from their history.
 - Exploration state identity includes inventory, and the story map renders the expanded condition/effect language.

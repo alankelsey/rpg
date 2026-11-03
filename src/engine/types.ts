@@ -45,6 +45,8 @@ export interface Choice {
   label: string;
   to: string;
   requires?: Condition[];
+  /** Positive amounts that must be available and are spent atomically when accepted. */
+  costs?: Record<string, number>;
   effects?: Effects;
   /**
    * Locked choices are shown disabled by default, so players see paths to try on a replay.

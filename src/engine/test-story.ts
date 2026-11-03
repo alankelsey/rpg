@@ -30,8 +30,8 @@ export const testStory: Story = {
     store: {
       text: 'You are hungry.',
       choices: [
-        { id: 'mnms', label: 'Peanut M&Ms', to: 'curb', effects: { stats: { energy: 15, money: -3, junkMeals: 1 } } },
-        { id: 'jerky', label: 'Jerky', to: 'curb', effects: { stats: { health: 5, money: -6 } } },
+        { id: 'mnms', label: 'Peanut M&Ms', to: 'curb', costs: { money: 3 }, effects: { stats: { energy: 15, junkMeals: 1 } } },
+        { id: 'jerky', label: 'Jerky', to: 'curb', costs: { money: 6 }, effects: { stats: { health: 5 } } },
       ],
     },
     street: {
@@ -51,7 +51,7 @@ export const testStory: Story = {
     hotel: {
       text: 'The hotel is $90 a night.',
       choices: [
-        { id: 'checkin', label: 'Check in', to: 'rested', requires: [{ stat: 'money', gte: 90 }], effects: { stats: { money: -90 } } },
+        { id: 'checkin', label: 'Check in', to: 'rested', costs: { money: 90 } },
         { id: 'hostel', label: 'Try the hostel', to: 'hostel' },
       ],
     },

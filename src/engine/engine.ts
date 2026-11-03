@@ -59,7 +59,8 @@ export function choiceViews(story: Story, state: RunState): ChoiceView[] {
   if (state.ended) return [];
   const views: ChoiceView[] = [];
   for (const choice of getScene(story, state.sceneId).choices ?? []) {
-    const failed = (choice.requires ?? []).filter((c) => !checkCondition(c, state));
+    const costConditions: Condition[] = Object.entries(choice.costs ?? {}).map(([stat, amount]) => ({ stat, gte: amount }));
+    const failed = [...(choice.requires ?? []), ...costConditions].filter((c) => !checkCondition(c, state));
     if (failed.length > 0 && choice.hideWhenLocked) continue;
     views.push({ choice, available: failed.length === 0, failed });
   }
@@ -87,7 +88,8 @@ export function transition(story: Story, state: RunState, choiceId: string): Tra
   if (!view) throw new IllegalChoiceError(`"${choiceId}" is not a choice in scene "${state.sceneId}"`);
   if (!view.available) throw new IllegalChoiceError(`"${choiceId}" is locked`);
 
-  const { state: withEffects, events } = applyEffects(story, state, view.choice);
+  const { state: withCosts, events: costEvents } = applyCosts(story, state, view.choice);
+  const { state: withEffects, events } = applyEffects(story, withCosts, view.choice);
   const destination = getScene(story, view.choice.to);
   const next: RunState = {
     ...withEffects,
@@ -96,7 +98,7 @@ export function transition(story: Story, state: RunState, choiceId: string): Tra
     revision: state.revision + 1,
     ended: Boolean(destination.ending),
   };
-  const resultEvents: TransitionEvent[] = [...events, { type: 'scene', from: state.sceneId, to: next.sceneId }];
+  const resultEvents: TransitionEvent[] = [...costEvents, ...events, { type: 'scene', from: state.sceneId, to: next.sceneId }];
   if (destination.ending) resultEvents.push({ type: 'ending', endingId: destination.ending.id });
   return { state: next, events: resultEvents };
 }
@@ -297,6 +299,21 @@ function applyEffects(story: Story, state: RunState, choice: Choice): { state: R
     if (after !== before) events.push({ type: 'inventory', item, before, after, delta: after - before });
   }
   return { state: { ...state, stats, flags, inventory }, events };
+}
+
+function applyCosts(story: Story, state: RunState, choice: Choice): { state: RunState; events: TransitionEvent[] } {
+  const stats = { ...state.stats };
+  const events: TransitionEvent[] = [];
+  for (const [stat, amount] of Object.entries(choice.costs ?? {})) {
+    const def = story.stats[stat];
+    if (!def) throw new Error(`Choice "${choice.id}" spends unknown stat "${stat}"`);
+    const before = stats[stat] ?? 0;
+    if (before < amount) throw new IllegalChoiceError(`"${choice.id}" cannot spend ${amount} ${stat}; only ${before} available`);
+    const after = before - amount;
+    stats[stat] = after;
+    events.push({ type: 'stat', stat, before, after, delta: -amount });
+  }
+  return { state: { ...state, stats }, events };
 }
 
 function clamp(value: number, def: StatDef): number {

@@ -81,11 +81,18 @@ export function validateStory(story: Story): Issue[] {
       seen.add(choice.id);
       if (!sceneIds.has(choice.to)) error(cAt, `Leads to missing scene "${choice.to}"`);
       choice.requires?.forEach((c, i) => checkCondition(c, `${cAt}.requires[${i}]`));
+      for (const [key, amount] of Object.entries(choice.costs ?? {})) {
+        if (!(key in story.stats)) error(cAt, `Spends unknown stat "${key}"`);
+        if (!Number.isFinite(amount) || amount <= 0) error(cAt, `Cost for "${key}" must be a positive finite number`);
+      }
       for (const key of Object.keys(choice.effects?.stats ?? {})) {
         if (!(key in story.stats)) error(cAt, `Changes unknown stat "${key}"`);
       }
       for (const [key, delta] of Object.entries(choice.effects?.stats ?? {})) {
         if (!Number.isFinite(delta)) error(cAt, `Stat change for "${key}" must be finite`);
+        if (delta < 0 && story.stats[key]?.format === 'money') {
+          warn(cAt, `Negative money effect for "${key}" does not check affordability; use costs for a purchase`);
+        }
       }
       for (const [key, delta] of Object.entries(choice.effects?.inventory ?? {})) {
         if (!(key in (story.items ?? {}))) error(cAt, `Changes unknown item "${key}"`);
