@@ -1205,6 +1205,56 @@ button:disabled {
   overflow: auto;
 }
 
+.route-simulator {
+  display: grid;
+  gap: 0.7rem;
+  margin-bottom: 1.5rem;
+  padding: 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--surface) 75%, var(--bg));
+}
+
+.route-simulator > p,
+.simulator-choices p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.simulator-heading,
+.simulator-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.simulator-heading .eyebrow { margin: 0 0 0.25rem; }
+.simulator-heading h3 { margin: 0; font: 700 1.12rem/1.2 Georgia, 'Iowan Old Style', serif; }
+.simulator-count { color: var(--muted); font-size: 0.7rem; white-space: nowrap; }
+.route-simulator > button { width: 100%; }
+.simulator-actions button { flex: 1; min-width: 0; padding: 0.55rem 0.35rem; font-size: 0.72rem; }
+.simulator-location { padding-top: 0.15rem; }
+.simulator-location strong { color: var(--text); }
+.simulator-events,
+.simulator-choices,
+.simulator-timeline { display: grid; gap: 0.5rem; font-size: 0.74rem; }
+.simulator-events > strong,
+.simulator-choices > strong,
+.simulator-timeline > strong { font-size: 0.72rem; }
+.simulator-events ul,
+.simulator-timeline ol { margin: 0; padding-left: 1.1rem; }
+.simulator-events li { margin-bottom: 0.2rem; }
+.simulator-choice { display: grid; gap: 0.25rem; }
+.simulator-choice button { width: 100%; padding: 0.6rem; text-align: left; font-size: 0.74rem; }
+.simulator-choice small { color: var(--bad); font-size: 0.69rem; line-height: 1.35; }
+.simulator-timeline li { margin: 0.2rem 0; }
+.simulator-timeline button { padding: 0; border: 0; background: none; color: var(--accent); font-size: 0.72rem; line-height: 1.3; text-align: left; text-decoration: underline; }
+.simulator-timeline button:hover { color: var(--text); }
+.route-simulator .route-state dl div { grid-template-columns: minmax(0, 1fr) auto; }
+
 @media (max-width: 800px) {
   .map-page {
     padding: 1rem 0.75rem 2rem;

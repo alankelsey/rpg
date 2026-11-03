@@ -15,6 +15,7 @@ Can the current story data produce a useful visual flow chart without maintainin
 - Lets the reviewer locate a passage, select it, inspect its prose, and follow its outgoing connections.
 - Shows requirements, stat changes, and flag changes in the passage inspector.
 - Traces one engine-verified route to each reachable ending, highlights its passages/connections, and shows final stats, inventory, flags, and ordered choices.
+- Simulates a route from the opening with canonical choice availability and replay. Authors can take a choice, see transition events and full state (including hidden stats), inspect visible locked choices, and undo, reset, or rewind to an earlier step.
 - Links between the story picker, reader, and map.
 
 The layout is native React, HTML, and SVG so the first review measures the information design without committing to an editor framework. It uses a left-to-right layered layout with a safe fallback for future cyclic stories.
@@ -24,10 +25,9 @@ The layout is native React, HTML, and SVG so the first review measures the infor
 - Creating, reconnecting, or deleting nodes and edges.
 - Editing prose, choice labels, requirements, or effects.
 - Saving changes back to story JSON.
-- Full state simulation along a selected route.
 - Collaborative editing or publication.
 
-Those belong to the editor iteration after this viewer is accepted.
+Passage and choice editing belong to the next experiment. The route simulator is read-only and starts from a clean sample run; it does not modify a player's save.
 
 ## Review checklist
 
@@ -42,3 +42,9 @@ Those belong to the editor iteration after this viewer is accepted.
 ## Review result (2026-11-03)
 
 Accepted as the baseline for editor experiments. `npm run test:visual` exercises a canonical ending route in installed Chrome at 1440×1000 and 390×844, asserts that the document does not overflow horizontally, and captures full-page screenshots for inspection. The review found and fixed a narrow/tablet intrinsic-width overflow. Keep the contained scrollable canvas, passage inspector, ending tones, route highlighting, and canonical state summary when adding editing controls. Choice labels should remain toggleable because dense branches overlap at the current prototype scale.
+
+## Route/state simulation result (2026-11-03)
+
+The simulator uses `simulateRoute`, `choiceViews`, and `lockedReason` from the engine. A Chrome interaction check followed a four-choice path to the job board, verified an Energy-locked route and highlighted map nodes, then exercised undo and reset. The desktop and mobile map smoke checks still pass.
+
+The map viewport scrolls independently from the page. On narrow screens, the route simulator and passage inspector sit below the map, requiring vertical scrolling between structure and state. Hidden choices follow the reader's visibility rule and are omitted from the simulator; authored requirements remain visible in the selected passage inspector. The next editor experiment should change one in-memory `Story` value, validate that same value, and keep invalid drafts separate from playable previews.

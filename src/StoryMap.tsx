@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { explore, formatStat, simulateRoute, validateStory, type Choice, type Condition, type RouteSimulation, type Scene, type Story } from './engine';
+import { choiceViews, explore, formatStat, lockedReason, simulateRoute, validateStory, type Choice, type Condition, type RouteSimulation, type Scene, type Story, type TransitionEvent } from './engine';
 import { navigate } from './router';
 import { MAP_NODE_HEIGHT, MAP_NODE_WIDTH, layoutStory } from './story-map/layout';
 import { findStory } from './stories/catalog';
@@ -44,7 +44,7 @@ function MapView({ story }: { story: Story }) {
   const [selectedId, setSelectedId] = useState(story.start);
   const [previewHistory, setPreviewHistory] = useState<string[]>();
   const [showLabels, setShowLabels] = useState(true);
-  const nodeRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const viewportRef = useRef<HTMLElement | null>(null);
   const nodeById = useMemo(() => new Map(layout.nodes.map((node) => [node.id, node])), [layout.nodes]);
   const selected = nodeById.get(selectedId) ?? layout.nodes[0]!;
   const selectedEdges = new Set(
@@ -60,7 +60,20 @@ function MapView({ story }: { story: Story }) {
 
   const selectNode = (id: string, scroll = false) => {
     setSelectedId(id);
-    if (scroll) requestAnimationFrame(() => nodeRefs.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' }));
+    if (scroll) {
+      const node = nodeById.get(id);
+      const viewport = viewportRef.current;
+      if (node && viewport) viewport.scrollTo({ left: node.x + MAP_NODE_WIDTH / 2 - viewport.clientWidth / 2, top: node.y + MAP_NODE_HEIGHT / 2 - viewport.clientHeight / 2 });
+    }
+  };
+  const setRoute = (history: readonly string[]) => {
+    const route = simulateRoute(story, 'Preview', history);
+    setPreviewHistory([...history]);
+    selectNode(route.final.sceneId, true);
+  };
+  const advanceRoute = (choiceId: string) => {
+    if (!preview || !choiceViews(story, preview.final).some((view) => view.choice.id === choiceId && view.available)) return;
+    setRoute([...preview.final.history, choiceId]);
   };
 
   return (
@@ -105,7 +118,7 @@ function MapView({ story }: { story: Story }) {
       </section>
 
       <div className="map-workspace">
-        <section className="map-viewport" aria-label={`Flow chart for ${story.title}`} tabIndex={0}>
+        <section ref={viewportRef} className="map-viewport" aria-label={`Flow chart for ${story.title}`} tabIndex={0}>
           <div className="map-canvas" style={{ width: layout.width, height: layout.height }}>
             <svg className="map-edges" width={layout.width} height={layout.height} aria-hidden="true">
               <defs>
@@ -138,7 +151,6 @@ function MapView({ story }: { story: Story }) {
               return (
                 <button
                   key={node.id}
-                  ref={(element) => { nodeRefs.current[node.id] = element; }}
                   type="button"
                   className={`map-node ${kind} ${selected.id === node.id ? 'selected' : ''} ${previewNodes.has(node.id) ? 'route-preview' : ''} ${node.reachable ? '' : 'unreachable'}`}
                   style={{ left: node.x, top: node.y, width: MAP_NODE_WIDTH, height: MAP_NODE_HEIGHT }}
@@ -160,8 +172,9 @@ function MapView({ story }: { story: Story }) {
           sceneId={selected.id}
           scene={selected.scene}
           endingRoute={selected.scene.ending ? exploration.endings.get(selected.scene.ending.id) : undefined}
-          preview={preview?.final.sceneId === selected.id ? preview : undefined}
-          onPreview={(history) => setPreviewHistory([...history])}
+          preview={preview}
+          onPreview={setRoute}
+          onAdvance={advanceRoute}
           onSelect={selectNode}
         />
       </div>
@@ -176,6 +189,7 @@ function PassageInspector({
   endingRoute,
   preview,
   onPreview,
+  onAdvance,
   onSelect,
 }: {
   story: Story;
@@ -184,10 +198,13 @@ function PassageInspector({
   endingRoute?: string[];
   preview?: RouteSimulation;
   onPreview: (history: readonly string[]) => void;
+  onAdvance: (choiceId: string) => void;
   onSelect: (id: string, scroll?: boolean) => void;
 }) {
+  const routeHere = preview?.final.sceneId === sceneId ? preview : undefined;
   return (
     <aside className="map-inspector" aria-labelledby="passage-heading">
+      <RouteSimulator story={story} preview={preview} onPreview={onPreview} onAdvance={onAdvance} />
       <p className="eyebrow">Selected passage · {sceneId}</p>
       <h2 id="passage-heading">{scene.title ?? sceneId}</h2>
       <p className="map-excerpt">{scene.text.replaceAll('{name}', 'the player')}</p>
@@ -200,9 +217,8 @@ function PassageInspector({
           {endingRoute && (
             <section className="route-state-preview" aria-label="Route state preview">
               <button type="button" onClick={() => onPreview(endingRoute)}>
-                {preview ? 'Refresh canonical route' : `Trace one route · ${endingRoute.length} choices`}
+                {routeHere ? 'Refresh canonical route' : `Trace one route · ${endingRoute.length} choices`}
               </button>
-              {preview && <RouteState story={story} preview={preview} />}
             </section>
           )}
         </>
@@ -230,16 +246,92 @@ function PassageInspector({
   );
 }
 
+function RouteSimulator({ story, preview, onPreview, onAdvance }: {
+  story: Story;
+  preview?: RouteSimulation;
+  onPreview: (history: readonly string[]) => void;
+  onAdvance: (choiceId: string) => void;
+}) {
+  const state = preview?.final;
+  const scene = state ? story.scenes[state.sceneId] : undefined;
+  const views = state ? choiceViews(story, state) : [];
+  const lastStep = preview?.steps.at(-1);
+  return (
+    <section className="route-simulator" aria-labelledby="route-simulator-heading">
+      <div className="simulator-heading">
+        <div>
+          <p className="eyebrow">Engine-backed preview</p>
+          <h3 id="route-simulator-heading">Route simulator</h3>
+        </div>
+        {preview && <span className="simulator-count">{state?.revision} choices</span>}
+      </div>
+      {!preview ? (
+        <>
+          <p>Choose a path from the opening. The map and state update after each accepted choice.</p>
+          <button type="button" onClick={() => onPreview([])}>Start from opening</button>
+        </>
+      ) : (
+        <>
+          <div className="simulator-actions">
+            <button type="button" disabled={preview.steps.length === 0} onClick={() => onPreview(state!.history.slice(0, -1))}>← Undo choice</button>
+            <button type="button" disabled={preview.steps.length === 0} onClick={() => onPreview([])}>Reset route</button>
+          </div>
+          <p className="simulator-location">At <strong>{scene?.title ?? state?.sceneId}</strong>{state?.ended ? ' · ending reached' : ''}</p>
+          {lastStep && (
+            <div className="simulator-events">
+              <strong>Last choice changed</strong>
+              <ul>{lastStep.result.events.map((event, index) => <li key={`${lastStep.result.state.revision}-${index}`}>{describeEvent(story, event)}</li>)}</ul>
+            </div>
+          )}
+          {!state?.ended && (
+            <div className="simulator-choices">
+              <strong>Choose the next path</strong>
+              {views.map((view) => (
+                <div key={view.choice.id} className="simulator-choice">
+                  <button type="button" disabled={!view.available} onClick={() => onAdvance(view.choice.id)}>{view.choice.label} →</button>
+                  {!view.available && <small>{lockedReason(story, view, state!)}</small>}
+                </div>
+              ))}
+              {views.length === 0 && <p>No visible choices are available from this passage.</p>}
+            </div>
+          )}
+          <RouteState story={story} preview={preview} />
+          <div className="simulator-timeline">
+            <strong>Rewind to a step</strong>
+            <ol>
+              <li><button type="button" onClick={() => onPreview([])}>Start</button></li>
+              {preview.steps.map((step, index) => {
+                const choice = story.scenes[step.fromSceneId]?.choices?.find((item) => item.id === step.choiceId);
+                return <li key={`${index}/${step.fromSceneId}/${step.choiceId}`}><button type="button" onClick={() => onPreview(state!.history.slice(0, index + 1))}>{choice?.label ?? step.choiceId}</button></li>;
+              })}
+            </ol>
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
+function describeEvent(story: Story, event: TransitionEvent): string {
+  switch (event.type) {
+    case 'stat': return `${story.stats[event.stat]?.label ?? humanize(event.stat)}: ${formatStat(story, event.stat, event.before)} → ${formatStat(story, event.stat, event.after)}`;
+    case 'flag': return `${humanize(event.flag)}: ${event.before ? 'yes' : 'no'} → ${event.after ? 'yes' : 'no'}`;
+    case 'inventory': return `${story.items?.[event.item]?.label ?? humanize(event.item)}: ${event.before} → ${event.after}`;
+    case 'scene': return `Passage: ${story.scenes[event.to]?.title ?? event.to}`;
+    case 'ending': return `Ending reached: ${event.endingId}`;
+  }
+}
+
 function RouteState({ story, preview }: { story: Story; preview: RouteSimulation }) {
   const state = preview.final;
-  const visibleStats = Object.entries(state.stats).filter(([id]) => !story.stats[id]?.hidden);
+  const allStats = Object.entries(state.stats);
   const inventory = Object.entries(state.inventory).filter(([, quantity]) => quantity > 0);
   const flags = Object.entries(state.flags).filter(([, value]) => value);
   return (
     <div className="route-state">
       <p><strong>Canonical state after {state.revision} choices</strong></p>
       <dl>
-        {visibleStats.map(([id, value]) => <Rule key={id} label={story.stats[id]?.label ?? humanize(id)} value={formatStat(story, id, value)} />)}
+        {allStats.map(([id, value]) => <Rule key={id} label={`${story.stats[id]?.label ?? humanize(id)}${story.stats[id]?.hidden ? ' (hidden)' : ''}`} value={formatStat(story, id, value)} />)}
         {inventory.map(([id, quantity]) => <Rule key={id} label={story.items?.[id]?.label ?? humanize(id)} value={String(quantity)} />)}
         {flags.length > 0 && <Rule label="Flags" value={flags.map(([id]) => humanize(id)).join(', ')} />}
       </dl>

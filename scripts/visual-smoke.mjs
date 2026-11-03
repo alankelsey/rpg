@@ -48,7 +48,23 @@ try {
 
       const screenshot = join(tmpdir(), `rpg-map-${review.name}.png`);
       await page.screenshot({ path: screenshot, fullPage: true });
-      console.log(`${review.name}: route preview passed; screenshot ${screenshot}`);
+
+      await page.getByRole('button', { name: 'Reset route' }).click();
+      for (const label of [
+        'The unemployment office',
+        'Take the flyer and find somewhere to sleep',
+        'The park bench (free)',
+        'Skip it',
+      ]) {
+        await page.locator('.simulator-choice button').filter({ hasText: label }).click();
+      }
+      await page.getByText('Canonical state after 4 choices').waitFor();
+      const locked = page.locator('.simulator-choice').filter({ hasText: 'Diner dishwasher, nights' });
+      assert.equal(await locked.locator('button').isDisabled(), true);
+      assert.match(await locked.textContent(), /Needs Energy 40\+/);
+      await page.getByRole('button', { name: '← Undo choice' }).click();
+      await page.getByText('Canonical state after 3 choices').waitFor();
+      console.log(`${review.name}: ending route and interactive simulation passed; screenshot ${screenshot}`);
       await page.close();
     }
   } finally {
