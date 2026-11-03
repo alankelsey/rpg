@@ -1039,6 +1039,16 @@ button:disabled {
   white-space: nowrap;
 }
 
+.map-node.route-preview {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+.map-edge.route-preview path {
+  stroke: var(--accent);
+  stroke-width: 4;
+  opacity: 1;
+}
+
 .map-node-id {
   max-width: 100%;
   overflow: hidden;
@@ -1148,6 +1158,51 @@ button:disabled {
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+}
+
+.route-state-preview {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.route-state-preview > button {
+  width: 100%;
+}
+
+.route-state {
+  padding: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--bg);
+  font-size: 0.76rem;
+}
+
+.route-state p,
+.route-state dl {
+  margin: 0 0 0.65rem;
+}
+
+.route-state dl div {
+  display: grid;
+  grid-template-columns: minmax(5rem, 0.8fr) 1fr;
+  gap: 0.5rem;
+}
+
+.route-state dt {
+  color: var(--muted);
+}
+
+.route-state dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.route-state ol {
+  max-height: 12rem;
+  margin: 0;
+  padding-left: 1.25rem;
+  overflow: auto;
 }
 
 @media (max-width: 800px) {

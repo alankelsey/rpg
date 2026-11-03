@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { formatStat, validateStory, type Choice, type Condition, type Scene, type Story } from './engine';
+import { explore, formatStat, simulateRoute, validateStory, type Choice, type Condition, type RouteSimulation, type Scene, type Story } from './engine';
 import { navigate } from './router';
 import { MAP_NODE_HEIGHT, MAP_NODE_WIDTH, layoutStory } from './story-map/layout';
 import { findStory } from './stories/catalog';
@@ -40,7 +40,9 @@ export function StoryMap({ storyId }: { storyId: string }) {
 
 function MapView({ story }: { story: Story }) {
   const layout = useMemo(() => layoutStory(story), [story]);
+  const exploration = useMemo(() => explore(story), [story]);
   const [selectedId, setSelectedId] = useState(story.start);
+  const [previewHistory, setPreviewHistory] = useState<string[]>();
   const [showLabels, setShowLabels] = useState(true);
   const nodeRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const nodeById = useMemo(() => new Map(layout.nodes.map((node) => [node.id, node])), [layout.nodes]);
@@ -49,6 +51,12 @@ function MapView({ story }: { story: Story }) {
     layout.edges.filter((edge) => edge.source === selected.id || edge.target === selected.id).map((edge) => edge.id),
   );
   const endingCount = layout.nodes.filter((node) => node.scene.ending).length;
+  const preview = useMemo(
+    () => previewHistory ? simulateRoute(story, 'Preview', previewHistory) : undefined,
+    [previewHistory, story],
+  );
+  const previewNodes = new Set(preview ? [story.start, ...preview.steps.map((step) => step.result.state.sceneId)] : []);
+  const previewEdges = new Set(preview?.steps.map((step) => `${step.fromSceneId}/${step.choiceId}`) ?? []);
 
   const selectNode = (id: string, scroll = false) => {
     setSelectedId(id);
@@ -112,7 +120,7 @@ function MapView({ story }: { story: Story }) {
                 const active = selectedEdges.has(edge.id);
                 const label = edgeLabelPosition(source.x + MAP_NODE_WIDTH, source.y + MAP_NODE_HEIGHT / 2, target.x, target.y + MAP_NODE_HEIGHT / 2);
                 return (
-                  <g key={edge.id} className={`map-edge ${active ? 'active' : 'muted'}`}>
+                  <g key={edge.id} className={`map-edge ${previewEdges.has(`${edge.source}/${edge.choice.id}`) ? 'route-preview' : ''} ${active ? 'active' : 'muted'}`}>
                     <path d={path} markerEnd="url(#map-arrow)" />
                     {showLabels && (
                       <foreignObject x={label.x - 68} y={label.y - 20} width="136" height="40">
@@ -132,7 +140,7 @@ function MapView({ story }: { story: Story }) {
                   key={node.id}
                   ref={(element) => { nodeRefs.current[node.id] = element; }}
                   type="button"
-                  className={`map-node ${kind} ${selected.id === node.id ? 'selected' : ''} ${node.reachable ? '' : 'unreachable'}`}
+                  className={`map-node ${kind} ${selected.id === node.id ? 'selected' : ''} ${previewNodes.has(node.id) ? 'route-preview' : ''} ${node.reachable ? '' : 'unreachable'}`}
                   style={{ left: node.x, top: node.y, width: MAP_NODE_WIDTH, height: MAP_NODE_HEIGHT }}
                   aria-pressed={selected.id === node.id}
                   onClick={() => selectNode(node.id)}
@@ -147,7 +155,15 @@ function MapView({ story }: { story: Story }) {
           </div>
         </section>
 
-        <PassageInspector story={story} sceneId={selected.id} scene={selected.scene} onSelect={selectNode} />
+        <PassageInspector
+          story={story}
+          sceneId={selected.id}
+          scene={selected.scene}
+          endingRoute={selected.scene.ending ? exploration.endings.get(selected.scene.ending.id) : undefined}
+          preview={preview?.final.sceneId === selected.id ? preview : undefined}
+          onPreview={(history) => setPreviewHistory([...history])}
+          onSelect={selectNode}
+        />
       </div>
     </main>
   );
@@ -157,11 +173,17 @@ function PassageInspector({
   story,
   sceneId,
   scene,
+  endingRoute,
+  preview,
+  onPreview,
   onSelect,
 }: {
   story: Story;
   sceneId: string;
   scene: Scene;
+  endingRoute?: string[];
+  preview?: RouteSimulation;
+  onPreview: (history: readonly string[]) => void;
   onSelect: (id: string, scroll?: boolean) => void;
 }) {
   return (
@@ -170,10 +192,20 @@ function PassageInspector({
       <h2 id="passage-heading">{scene.title ?? sceneId}</h2>
       <p className="map-excerpt">{scene.text.replaceAll('{name}', 'the player')}</p>
       {scene.ending ? (
-        <div className={`ending-chip ${scene.ending.tone}`}>
-          <span>{scene.ending.tone} ending</span>
-          <strong>{scene.ending.title}</strong>
-        </div>
+        <>
+          <div className={`ending-chip ${scene.ending.tone}`}>
+            <span>{scene.ending.tone} ending</span>
+            <strong>{scene.ending.title}</strong>
+          </div>
+          {endingRoute && (
+            <section className="route-state-preview" aria-label="Route state preview">
+              <button type="button" onClick={() => onPreview(endingRoute)}>
+                {preview ? 'Refresh canonical route' : `Trace one route · ${endingRoute.length} choices`}
+              </button>
+              {preview && <RouteState story={story} preview={preview} />}
+            </section>
+          )}
+        </>
       ) : (
         <div className="inspector-choices">
           <h3>Choices from here</h3>
@@ -195,6 +227,30 @@ function PassageInspector({
         </div>
       )}
     </aside>
+  );
+}
+
+function RouteState({ story, preview }: { story: Story; preview: RouteSimulation }) {
+  const state = preview.final;
+  const visibleStats = Object.entries(state.stats).filter(([id]) => !story.stats[id]?.hidden);
+  const inventory = Object.entries(state.inventory).filter(([, quantity]) => quantity > 0);
+  const flags = Object.entries(state.flags).filter(([, value]) => value);
+  return (
+    <div className="route-state">
+      <p><strong>Canonical state after {state.revision} choices</strong></p>
+      <dl>
+        {visibleStats.map(([id, value]) => <Rule key={id} label={story.stats[id]?.label ?? humanize(id)} value={formatStat(story, id, value)} />)}
+        {inventory.map(([id, quantity]) => <Rule key={id} label={story.items?.[id]?.label ?? humanize(id)} value={String(quantity)} />)}
+        {flags.length > 0 && <Rule label="Flags" value={flags.map(([id]) => humanize(id)).join(', ')} />}
+      </dl>
+      <ol>
+        {preview.steps.map((step) => (
+          <li key={`${step.result.state.revision}/${step.fromSceneId}/${step.choiceId}`}>
+            {story.scenes[step.fromSceneId]?.title ?? step.fromSceneId}: {step.choiceId}
+          </li>
+        ))}
+      </ol>
+    </div>
   );
 }
 

@@ -1,6 +1,6 @@
 # Engine and state roadmap
 
-Status: next implementation priority. Complete this gate before investing in more passage-editor UI.
+Status: implementation gate complete as of 2026-11-02. Manual visual review of the map route preview remains before broader editor UI work.
 
 ## Progress
 
@@ -18,11 +18,14 @@ The first contract slice was implemented on 2026-11-02:
 - Story validation finds structural cycles and requires an explicit `intentionalLoop` marker within each cyclic component. Exploration identifies whether an observed runtime cycle was marked and reports the failed conditions behind blocked non-ending states.
 - An incompatible save is preserved for export instead of being deleted automatically.
 - The story catalog resolves saves against an exact retained immutable version. If a build no longer carries that version, the save remains exportable and the reader explains that starting the latest version will replace it.
+- The read-only story map can trace one canonical route to any reachable ending. It highlights the passages and edges and shows the engine-produced final stats, inventory, flags, and ordered choices.
 - "New Town" now exercises the contract directly: the Route 9 flyer is an inventory item, and a composed requirement accepts either that flyer or Dev's referral for day labor.
 
 Current ID decision: scene IDs are unique within a story; choice IDs are unique within a scene. A choice event is resolved sequentially from the current scene, so the stable reference is the `(sceneId, choiceId)` pair even though compact saves store the ordered choice IDs. Published story versions are immutable, which makes the compact history unambiguous during replay. Revisit the serialized history shape before external APIs or datasets need independently addressable events.
 
-Remaining gate work includes making route simulation selectable in the existing map and adding an explicit migration fixture when the next save or rules version is introduced. Released story files must remain immutable and registered in the catalog while their saves are supported; removal uses the preserved-save behavior above rather than silently loading a different version.
+The only deferred contract item is an explicit migration fixture when the next save or rules version is introduced; inventing a second format solely to test migration would add false complexity. Released story files must remain immutable and registered in the catalog while their saves are supported; removal uses the preserved-save behavior above rather than silently loading a different version.
+
+Manual follow-up: visually review the route highlighting and state panel at desktop and narrow widths. The local browser is disabled in the current Work environment, so this interaction has build/type coverage and canonical simulation tests but not screenshot-based acceptance in this session.
 
 The playable reader and read-only story map prove that the current JSON can drive both play and visualization. The next risk is the contract beneath those screens. Editing tools should not hard-code today's narrow state model and then require a rewrite when inventory, richer requirements, chapters, mini-games, or external influence are added.
 
