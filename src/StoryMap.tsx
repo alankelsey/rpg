@@ -256,7 +256,12 @@ function DraftEditor({ story, sceneId, issues, status, onSceneSelect, onChange, 
       return;
     }
     let target: HTMLElement | null = null;
-    if (parts[0] === 'stats' || parts[0] === 'items') {
+    if (parts[0] === 'title' || parts[0] === 'summary' || parts[0] === 'start') {
+      const field = document.getElementById(`draft-story-${parts[0]}`);
+      const details = field?.closest('details');
+      if (details) details.open = true;
+      target = field;
+    } else if (parts[0] === 'stats' || parts[0] === 'items') {
       const container = document.getElementById(`definition-${parts[0] === 'stats' ? 'stat' : 'item'}-${parts[1]}`);
       const details = container?.closest('details');
       if (details) details.open = true;
@@ -335,6 +340,12 @@ function DraftEditor({ story, sceneId, issues, status, onSceneSelect, onChange, 
       </div>
       <p className="draft-editor-note">Edit a copy of the story. The map and simulator keep using the last valid version until you apply this draft. Playing the story still opens the published version.</p>
       <div className="draft-file-actions"><button type="button" onClick={onSave}>Save locally</button><button type="button" onClick={onDownload}>Download JSON</button><button type="button" onClick={() => importRef.current?.click()}>Import JSON</button><input ref={importRef} type="file" accept=".json,application/json" aria-label="Import story draft JSON" onChange={(event) => { const file = event.target.files?.[0]; if (file) onImport(file); event.target.value = ''; }} /><span role="status">{status}</span></div>
+      <details className="draft-story-details"><summary>Story details</summary><div className="draft-story-fields">
+        <label htmlFor="draft-story-title">Story title</label><input id="draft-story-title" value={story.title} onChange={(event) => changeDraft({ ...story, title: event.target.value })} />
+        <label htmlFor="draft-story-summary">Summary</label><textarea id="draft-story-summary" rows={3} value={story.summary} onChange={(event) => changeDraft({ ...story, summary: event.target.value })} />
+        <label htmlFor="draft-story-start">Opening passage</label><select id="draft-story-start" value={story.start} onChange={(event) => changeDraft({ ...story, start: event.target.value })}>{Object.entries(story.scenes).map(([id, item]) => <option key={id} value={id}>{item.title ?? id} ({id})</option>)}</select>
+        <p>Draft for {story.id}, version {story.version}. Story identity stays fixed in this local editor.</p>
+      </div></details>
       <div className="draft-editor-grid">
         <div className="draft-fields">
           <label htmlFor="draft-passage">Passage to edit</label>
@@ -370,7 +381,7 @@ function DraftEditor({ story, sceneId, issues, status, onSceneSelect, onChange, 
         </div>
       </div>
       <DefinitionsEditor story={story} onChange={changeDraft} />
-      <div className="draft-issues" aria-live="polite"><h3>Validation</h3>{issues.length === 0 ? <p>Draft is valid.</p> : <ul>{issues.map((issue, index) => <li key={`${issue.at}/${index}`} className={`draft-issue-${issue.level}`}><strong>{issue.level}</strong> {issue.at.startsWith('scenes.') || issue.at.startsWith('stats.') || issue.at.startsWith('items.') ? <button type="button" onClick={() => setIssueFocus({ at: issue.at, key: index })}>{issue.at}: {issue.message}</button> : <span>{issue.at}: {issue.message}</span>}</li>)}</ul>}</div>
+      <div className="draft-issues" aria-live="polite"><h3>Validation</h3>{issues.length === 0 ? <p>Draft is valid.</p> : <ul>{issues.map((issue, index) => <li key={`${issue.at}/${index}`} className={`draft-issue-${issue.level}`}><strong>{issue.level}</strong> {['title', 'summary', 'start'].includes(issue.at) || issue.at.startsWith('scenes.') || issue.at.startsWith('stats.') || issue.at.startsWith('items.') ? <button type="button" onClick={() => setIssueFocus({ at: issue.at, key: index })}>{issue.at}: {issue.message}</button> : <span>{issue.at}: {issue.message}</span>}</li>)}</ul>}</div>
       <section className="draft-explorer" aria-labelledby="draft-explorer-heading"><div><h3 id="draft-explorer-heading">Path explorer</h3><button type="button" disabled={errors.length > 0} onClick={() => setDiagnostics(explore(story, 5000))}>Explore valid draft</button></div><p>Runs a bounded engine search from the opening. This supplements human playtesting.</p>{diagnostics && <ExplorerReport story={story} report={diagnostics} onTrace={onTrace} />}</section>
     </section>
   );
